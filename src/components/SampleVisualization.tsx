@@ -64,27 +64,27 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
     ],
     relationships: [
       { 
-        label: 'Exploit -> Vulnerability', 
+        label: 'Exploit-EXPLOITS->Vulnerability', 
         query: 'MATCH (e:Exploit)-[r:EXPLOITS]->(v:Vulnerability) RETURN e, r, v LIMIT 50' 
       },
       { 
-        label: 'Product -> Vendor', 
+        label: 'Product->BELONGS_TO->Vendor', 
         query: 'MATCH (p:Product)-[r:BELONGS_TO]->(v:Vendor) RETURN p, r, v LIMIT 50' 
       },
       {
-        label: 'Vulnerability -> Product',
+        label: 'Vulnerability-AFFECTS->Product',
         query: 'MATCH (v:Vulnerability)-[r:AFFECTS]->(p:Product) RETURN v, r, p LIMIT 50'
       },
       {
-        label: 'Vulnerability -> Domain',
+        label: 'Vulnerability-REFERS_TO->Domain',
         query: 'MATCH (v:Vulnerability)-[r:REFERS_TO]->(d:Domain) RETURN v, r, d LIMIT 50'
       },
       {
-        label: 'Vulnerability -> Weakness',
+        label: 'Vulnerability-EXAMPLE_OF->Weakness',
         query: 'MATCH (v:Vulnerability)-[r:EXAMPLE_OF]->(w:Weakness) RETURN v, r, w LIMIT 50'
       },
       {
-        label: 'Author -> Exploit',
+        label: 'Author-WRITES->Exploit',
         query: 'MATCH (a:Author)-[r:WRITES]->(e:Exploit) RETURN a, r, e LIMIT 50'
       }
     ]
@@ -97,13 +97,13 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
           onClick={() => setActiveCategory('nodes')}
           style={tabStyle(activeCategory === 'nodes')}
         >
-          Node Queries
+          Nodes
         </button>
         <button
           onClick={() => setActiveCategory('relationships')}
           style={tabStyle(activeCategory === 'relationships')}
         >
-          Relationship Queries
+          Relationships
         </button>
       </div>
 
