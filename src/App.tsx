@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Neo4jService } from './services/neo4jService';
 import GraphVisualization from './components/GraphVisualization';
 import CypherFrame from './components/CypherFrame';
+import SampleVisualization from './components/SampleVisualization';
 import { GraphData, NodeData, LinkData } from './types/graph';
 
 /** Neo4j database connection configuration */
@@ -72,6 +73,9 @@ const App: React.FC = () => {
           onNodeClick={(node: NodeData) => setSelectedNode(node)}
         />
       </div>
+
+      {/* Middle area: Sample queries */}
+      <SampleVisualization onQuerySelect={handleRunQuery} />
 
       {/* Bottom area: Cypher query editor */}
       <CypherFrame 
