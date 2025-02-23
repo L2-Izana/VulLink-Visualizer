@@ -44,7 +44,7 @@ export interface Exploit {
     eid: string; 
     exploitType: string;
     platform: string;
-    exploitPublishedDate: string;
+    exploitPublishDate: string;
 }
 
 // Weakness: Unique identifier is the CWE ID.

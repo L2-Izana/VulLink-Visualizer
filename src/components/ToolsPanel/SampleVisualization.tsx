@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { RelationshipType } from '../schema/relationships';
-import { GraphNode } from '../schema/nodes';
+import { RelationshipType } from '../../schema/relationships';
+import { GraphNode } from '../../schema/nodes';
 
 interface SampleVisualizationProps {
   onQuerySelect: (query: string) => void;

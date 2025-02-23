@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Neo4jService } from './services/neo4jService';
 import GraphVisualization from './components/GraphVisualization';
 import CypherFrame from './components/CypherFrame';
-import SampleVisualization from './components/SampleVisualization';
+import ToolsPanel from './components/ToolsPanel/ToolsPanel';
 import { GraphData, NodeData, LinkData } from './types/graph';
 
 /** Neo4j database connection configuration */
@@ -23,6 +23,11 @@ const neo4jService = new Neo4jService(
   NEO4J_CONFIG.password
 );
 
+interface QueryResult {
+  graphData?: GraphData;
+  downloadData?: any[];
+}
+
 /**
  * Main App Component
  * Manages state and data flow between components
@@ -34,25 +39,40 @@ const App: React.FC = () => {
   const [warning, setWarning] = useState<string | null>(null);
 
   /**
-   * Executes a Cypher query and updates the graph visualization
+   * Executes different types of Cypher queries based on the purpose
    * @param query - The Cypher query to execute
+   * @param purpose - The purpose of the query (visualization, download, etc.)
    */
-  const handleRunQuery = async (query: string) => {
+  const handleRunQuery = async (query: string, purpose: 'visualization' | 'download' = 'visualization'): Promise<QueryResult> => {
     setError(null);
     setWarning(null);
 
     try {
-      if (!query.toLowerCase().includes('limit') || 
-          parseInt(query.toLowerCase().split('limit')[1]) > 100) {
-        setWarning('Please limit your query to 100 nodes or less using LIMIT clause. For larger datasets, please use the Download section.');
-        return;
-      }
+      switch (purpose) {
+        case 'visualization':
+          if (!query.toLowerCase().includes('limit') || 
+              parseInt(query.toLowerCase().split('limit')[1]) > 100) {
+            setWarning('Please limit your query to 100 nodes or less using LIMIT clause.');
+            return {};
+          }
+          const visualData = await neo4jService.executeQuery(query);
+          setGraphData(visualData);
+          return { graphData: visualData };
 
-      const graphData = await neo4jService.executeQuery(query);
-      setGraphData(graphData);
+        case 'download':
+          // if (!query.toLowerCase().includes('limit')) {
+          //   query += ' LIMIT 1000'; // Default limit for downloads
+          // }
+          const downloadData = await neo4jService.executeRawQuery(query);
+          return { downloadData };
+
+        default:
+          throw new Error('Invalid query purpose');
+      }
     } catch (error: any) {
       setError(error.message || 'An error occurred while executing the query');
       console.error('Error running query:', error);
+      throw error;
     }
   };
 
@@ -74,8 +94,8 @@ const App: React.FC = () => {
         />
       </div>
 
-      {/* Middle area: Sample queries */}
-      <SampleVisualization onQuerySelect={handleRunQuery} />
+      {/* Middle area: Tools panel with all sections */}
+      <ToolsPanel onQuerySelect={handleRunQuery} />
 
       {/* Bottom area: Cypher query editor */}
       <CypherFrame 
