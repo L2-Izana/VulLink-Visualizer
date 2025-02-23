@@ -50,8 +50,8 @@ const App: React.FC = () => {
     try {
       switch (purpose) {
         case 'visualization':
-          if (!query.toLowerCase().includes('limit') || 
-              parseInt(query.toLowerCase().split('limit')[1]) > 100) {
+          if (!query.toLowerCase().includes('limit') ||
+            parseInt(query.toLowerCase().split('limit')[1]) > 100) {
             setWarning('Please limit your query to 100 nodes or less using LIMIT clause.');
             return {};
           }
@@ -60,9 +60,6 @@ const App: React.FC = () => {
           return { graphData: visualData };
 
         case 'download':
-          // if (!query.toLowerCase().includes('limit')) {
-          //   query += ' LIMIT 1000'; // Default limit for downloads
-          // }
           const downloadData = await neo4jService.executeRawQuery(query);
           return { downloadData };
 
@@ -98,7 +95,7 @@ const App: React.FC = () => {
       <ToolsPanel onQuerySelect={handleRunQuery} />
 
       {/* Bottom area: Cypher query editor */}
-      <CypherFrame 
+      <CypherFrame
         runQuery={handleRunQuery}
         error={error}
         warning={warning}

@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
-import { 
-  Vulnerability, 
-  Exploit, 
-  Weakness, 
-  Product, 
-  Vendor, 
-  Author, 
-  Domain, 
-  GraphNode 
+import {
+  Vulnerability,
+  Exploit,
+  Weakness,
+  Product,
+  Vendor,
+  Author,
+  Domain,
+  GraphNode
 } from '../../schema/nodes';
 
 interface NodeDownloadProps {
@@ -128,6 +128,11 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
     []
   );
 
+  const handleSelectAllProperties = useCallback(() => {
+    if (!selectedNodeType) return;
+    setSelectedProperties(nodeTypes[selectedNodeType].properties);
+  }, [selectedNodeType]);
+
   const handleFormatChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormat(e.target.value as 'json' | 'csv');
@@ -140,25 +145,26 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
 
     const query = `
       MATCH (n:${selectedNodeType}) 
-      RETURN ${selectedProperties.map((prop) => 
-        `COALESCE(n.${prop}, '') as ${prop}`
-      ).join(', ')}
+      RETURN ${selectedProperties
+        .map((prop) => `COALESCE(n.${prop}, '') as ${prop}`)
+        .join(', ')}
     `;
 
     try {
       const { downloadData } = await onQuerySelect(query, 'download');
       if (downloadData) {
-        const data = format === 'json' ? 
-          downloadData.map((item: any) => {
-            // Convert empty strings back to null for JSON format
-            Object.keys(item).forEach(key => {
-              if (item[key] === '') {
-                item[key] = null;
-              }
-            });
-            return item;
-          }) : 
-          convertToCSV(downloadData);
+        const data =
+          format === 'json'
+            ? downloadData.map((item: any) => {
+                // Convert empty strings back to null for JSON format
+                Object.keys(item).forEach((key) => {
+                  if (item[key] === '') {
+                    item[key] = null;
+                  }
+                });
+                return item;
+              })
+            : convertToCSV(downloadData);
         downloadFile(data, `${selectedNodeType}_data.${format}`);
       }
     } catch (error) {
@@ -187,15 +193,19 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
       {selectedNodeType && (
         <div style={styles.section}>
           <h4>2. Select Properties</h4>
+          <button
+            onClick={handleSelectAllProperties}
+            style={styles.selectAllButton}
+          >
+            Select All
+          </button>
           <div style={styles.checkboxGroup}>
             {nodeTypes[selectedNodeType].properties.map((prop) => (
               <label key={prop} style={styles.checkboxLabel}>
                 <input
                   type="checkbox"
                   checked={selectedProperties.includes(prop)}
-                  onChange={(e) =>
-                    handlePropertyChange(prop, e.target.checked)
-                  }
+                  onChange={(e) => handlePropertyChange(prop, e.target.checked)}
                 />
                 {prop}
               </label>
@@ -251,6 +261,15 @@ const styles = {
     padding: '8px',
     borderRadius: '4px',
     border: '1px solid #ddd'
+  },
+  selectAllButton: {
+    padding: '6px 12px',
+    marginBottom: '10px',
+    backgroundColor: '#4a90e2',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer'
   },
   checkboxGroup: {
     display: 'grid',
