@@ -1,21 +1,41 @@
+/**
+ * @fileoverview Main application component that manages the Neo4j connection
+ * and orchestrates the graph visualization and query interface.
+ */
+
 import React, { useState } from 'react';
 import neo4j, { Driver, Session } from 'neo4j-driver';
 import GraphVisualization from './components/GraphVisualization';
 import CypherFrame from './components/CypherFrame';
 import { GraphData, NodeData, LinkData } from './types/graph';
 
-// Connect to your local Neo4j database
+/** Neo4j database connection configuration */
+const NEO4J_CONFIG = {
+  url: process.env.REACT_APP_NEO4J_URL || 'bolt://localhost:7687',
+  user: process.env.REACT_APP_NEO4J_USER || 'neo4j',
+  password: process.env.REACT_APP_NEO4J_PASSWORD || ''
+};
+
+// Initialize Neo4j driver
 const driver: Driver = neo4j.driver(
-  'bolt://localhost:7687',
-  neo4j.auth.basic('neo4j', 'Vanly180705!')
+  NEO4J_CONFIG.url,
+  neo4j.auth.basic(NEO4J_CONFIG.user, NEO4J_CONFIG.password)
 );
 
+/**
+ * Main App Component
+ * Manages state and data flow between components
+ */
 const App: React.FC = () => {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
+  /**
+   * Executes a Cypher query and updates the graph visualization
+   * @param query - The Cypher query to execute
+   */
   const handleRunQuery = async (query: string) => {
     const session: Session = driver.session();
     const nodesMap = new Map<string, NodeData>();

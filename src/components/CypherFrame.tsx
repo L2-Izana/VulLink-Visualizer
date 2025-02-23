@@ -1,12 +1,24 @@
-// src/components/CypherFrame.tsx
+/**
+ * @fileoverview A React component that provides a Cypher query interface.
+ * Allows users to input and execute Cypher queries against Neo4j database.
+ */
+
 import React, { useState } from 'react';
 
+/** Props for the CypherFrame component */
 interface CypherFrameProps {
+  /** Callback function to execute the query */
   runQuery: (query: string) => void;
+  /** Error message to display if query fails */
   error?: string | null;
+  /** Warning message to display for query limitations */
   warning?: string | null;
 }
 
+/**
+ * CypherFrame Component
+ * Provides a textarea for Cypher query input and execution
+ */
 const CypherFrame: React.FC<CypherFrameProps> = ({ runQuery, error, warning }) => {
   const [query, setQuery] = useState('MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50');
 

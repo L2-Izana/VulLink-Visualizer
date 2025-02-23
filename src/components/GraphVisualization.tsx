@@ -1,19 +1,33 @@
+/**
+ * @fileoverview A React component that visualizes graph data using Force-Directed Graph.
+ * Uses react-force-graph-2d for rendering and d3 for force simulation.
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
+import * as d3 from 'd3';
 import { GraphData, NodeData } from '../types/graph';
 
+/** Props for the GraphVisualization component */
 interface GraphVisualizationProps {
+  /** Graph data containing nodes and links */
   data: GraphData;
+  /** Callback function when a node is clicked */
   onNodeClick: (node: NodeData) => void;
 }
 
+/**
+ * GraphVisualization Component
+ * Renders an interactive force-directed graph with node details panel
+ */
 const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const graphRef = useRef<any>(null); // Reference to the force graph instance
   const [containerWidth, setContainerWidth] = useState<number>(0);
   const [containerHeight, setContainerHeight] = useState<number>(500);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
 
-  // Update containerWidth on mount and whenever the window resizes.
+  // Update containerWidth on mount and when the window resizes.
   useEffect(() => {
     function updateSize() {
       if (containerRef.current) {
@@ -26,13 +40,47 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  // Calculate node radius based on container width. Adjust the divisor as needed.
-  const baseRadius = containerWidth / 200;
-  const nodeRadius = baseRadius < 5 ? 5 : baseRadius;
+  // Calculate node radius based on container width.
+  const baseRadius = Math.max(containerWidth / 100, 10);
+  const nodeRadius = baseRadius < 10 ? 10 : baseRadius;
+
+  // Add a collision force so that nodes maintain a minimum distance.
+  useEffect(() => {
+    if (graphRef.current) {
+      // Add d3 forceCollide with radius: nodeRadius plus extra padding (5 pixels)
+      graphRef.current.d3Force('collide', d3.forceCollide((node: any) => nodeRadius + 2));
+    }
+  }, [nodeRadius]);
 
   const handleNodeClick = (node: NodeData) => {
     setSelectedNode(node);
     onNodeClick(node);
+  };
+
+  /**
+   * Gets the display ID for a node based on its type
+   * @param node - The node object to get ID from
+   * @returns The display ID string
+   */
+  const getNodeId = (node: any): string => {
+    switch (node.label) {
+      case 'Vulnerability':
+        return node.properties.cveID;
+      case 'Exploit':
+        return node.properties.eid;
+      case 'Weakness':
+        return node.properties.cweID;
+      case 'Product':
+        return node.properties.productName;
+      case 'Vendor':
+        return node.properties.vendorName;
+      case 'Author':
+        return node.properties.authorName;
+      case 'Domain':
+        return node.properties.domainName;
+      default:
+        return 'Unknown';
+    }
   };
 
   return (
@@ -49,24 +97,38 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
       }}
     >
       <ForceGraph2D
+        ref={graphRef}
         graphData={data}
         nodeAutoColorBy="label"
         linkDirectionalParticles={2}
         linkDirectionalParticleSpeed={() => 0.004}
         onNodeClick={handleNodeClick}
         nodeCanvasObject={(node: any, ctx, globalScale) => {
-          const label = node.label;
-          const fontSize = 12 / globalScale;
+          const nodeId = getNodeId(node);
+          const fontSize = Math.min(nodeRadius / 3, 8);
           ctx.fillStyle = node.color;
           ctx.beginPath();
           ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false);
           ctx.fill();
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
           ctx.font = `${fontSize}px Sans-Serif`;
           ctx.fillStyle = '#000';
-          ctx.fillText(label, node.x + nodeRadius + 3, node.y + nodeRadius / 2);
+          const maxTextWidth = nodeRadius * 1.6;
+          let displayText = nodeId;
+          if (ctx.measureText(nodeId).width > maxTextWidth) {
+            let truncated = nodeId;
+            while (ctx.measureText(truncated + '...').width > maxTextWidth) {
+              truncated = truncated.slice(0, -1);
+            }
+            displayText = truncated + '...';
+          }
+          ctx.fillText(displayText, node.x, node.y);
         }}
         onNodeDragEnd={(node: any) => {
-          // Constrain node position within bounds
           node.x = Math.max(nodeRadius, Math.min(containerWidth - nodeRadius, node.x));
           node.y = Math.max(nodeRadius, Math.min(containerHeight - nodeRadius, node.y));
         }}
@@ -74,7 +136,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
         width={containerWidth}
         height={containerHeight}
       />
-      
+
       {selectedNode && (
         <div
           style={{
@@ -102,11 +164,11 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
               paddingBottom: '8px'
             }}
           >
-            <h3 style={{ 
-              margin: 0, 
+            <h3 style={{
+              margin: 0,
               fontSize: '16px',
               color: '#2c3e50',
-              fontWeight: 600 
+              fontWeight: 600
             }}>
               {selectedNode.label}
             </h3>
@@ -130,15 +192,15 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
               ✕
             </button>
           </div>
-          
-          <div style={{ 
-            maxHeight: '200px', 
+
+          <div style={{
+            maxHeight: '200px',
             overflowY: 'auto',
             scrollbarWidth: 'thin',
             paddingRight: '8px'
           }}>
             {Object.entries(selectedNode.properties).map(([key, value]) => (
-              <div 
+              <div
                 key={key}
                 style={{
                   marginBottom: '8px',
@@ -147,7 +209,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
                   borderRadius: '6px'
                 }}
               >
-                <span style={{ 
+                <span style={{
                   color: '#666',
                   fontSize: '12px',
                   textTransform: 'uppercase',
@@ -157,7 +219,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
                 }}>
                   {key}
                 </span>
-                <span style={{ 
+                <span style={{
                   color: '#2c3e50',
                   fontSize: '14px',
                   wordBreak: 'break-word'
