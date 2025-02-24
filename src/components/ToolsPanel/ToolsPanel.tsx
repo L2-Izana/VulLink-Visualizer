@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import SampleVisualization from './SampleVisualization';
 import { SubgraphQA } from './SubgraphQA';
-import { LLMIntegration } from './LLMIntegration';
+import LLMIntegration from './LLMIntegration';
 import NodeDownload from './NodeDownload';
 import RelationshipDownload from './RelationshipDownload';
 
