@@ -1,124 +1,52 @@
 import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
-import { Relationship, RelationshipType } from '../../schema/relationships';
+import { Relationship } from '../../schema/relationships';
+import { nodeTypes } from '../../schema/nodeConfigs';
+
 interface RelationshipDownloadProps {
   onQuerySelect: (query: string, purpose: string) => Promise<any>;
 }
 
 const relationshipTypes = {
-  AFFECTS: {
-    label: 'AFFECTS',
-    properties: [
-      'id',
-      'type',
-      'source',
-      'target',
-      'numOfVersion',
-      'affectedVersion'
-    ] as Array<keyof Relationship>,
-  },
-  REFERS_TO: {
-    label: 'REFERS_TO',
-    properties: [
-      'id',
-      'type',
-      'source',
-      'target'
-    ] as Array<keyof Relationship>,
-  },
-  EXAMPLE_OF: {
-    label: 'EXAMPLE_OF',
-    properties: [
-      'id',
-      'type',
-      'source',
-      'target'
-    ] as Array<keyof Relationship>,
-  },
-  EXPLOITS: {
-    label: 'EXPLOITS',
-    properties: [
-      'id',
-      'type',
-      'source',
-      'target'
-    ] as Array<keyof Relationship>,
-  },
-  WRITES: {
-    label: 'WRITES',
-    properties: [
-      'id',
-      'type',
-      'source',
-      'target'
-    ] as Array<keyof Relationship>,
-  },
-  BELONGS_TO: {
-    label: 'BELONGS_TO',
-    properties: [
-      'id',
-      'type',
-      'source',
-      'target'
-    ] as Array<keyof Relationship>,
-  }
+  AFFECTS: { label: 'AFFECTS', source: 'Vulnerability', target: 'Product', properties: ['numOfVersion', 'affectedVersion'] },
+  REFERS_TO: { label: 'REFERS_TO', source: 'Vulnerability', target: 'Domain', properties: []},
+  EXAMPLE_OF: { label: 'EXAMPLE_OF', source: 'Vulnerability', target: 'Weakness', properties: []},
+  EXPLOITS: { label: 'EXPLOITS', source: 'Exploit', target: 'Vulnerability', properties: []},
+  WRITES: { label: 'WRITES', source: 'Author', target: 'Exploit', properties: []},
+  BELONGS_TO: { label: 'BELONGS_TO', source: 'Product', target: 'Vendor', properties: []},
 } as const;
 
 const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySelect }) => {
   const [selectedRelationshipType, setSelectedRelationshipType] = useState<keyof typeof relationshipTypes | ''>('');
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
-  const [format, setFormat] = useState<'json' | 'csv'>('json');
+  const [sourceProperties, setSourceProperties] = useState<string[]>([]);
+  const [targetProperties, setTargetProperties] = useState<string[]>([]);
 
-  const handleRelationshipTypeChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const type = e.target.value as keyof typeof relationshipTypes;
-      setSelectedRelationshipType(type);
-      // Reset properties when the relationship type changes
-      setSelectedProperties([]);
-    },
-    []
-  );
+  const handleRelationshipTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const type = e.target.value as keyof typeof relationshipTypes;
+    setSelectedRelationshipType(type);
+    setSelectedProperties([]);
+    setSourceProperties([]);
+    setTargetProperties([]);
+  }, []);
 
-  const handlePropertyChange = useCallback(
-    (prop: string, checked: boolean) => {
-      setSelectedProperties((prev) =>
-        checked ? [...prev, prop] : prev.filter((p) => p !== prop)
-      );
-    },
-    []
-  );
+  const handlePropertyChange = useCallback((prop: string, checked: boolean, setProperties: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setProperties((prev) => checked ? [...prev, prop] : prev.filter((p) => p !== prop));
+  }, []);
 
-  const handleSelectAllProperties = useCallback(() => {
-    if (!selectedRelationshipType) return;
-    setSelectedProperties(relationshipTypes[selectedRelationshipType].properties);
-  }, [selectedRelationshipType]);
-
-  const handleFormatChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFormat(e.target.value as 'json' | 'csv');
-    },
-    []
-  );
-
-  // TODO: Enhance relationship download functionality
-  // Issues to address:
-  // 1. Add source and target node properties to download
-  // 2. Implement proper relationship property mapping
-  // 3. Handle null values in relationship properties
-  // 4. Add relationship direction visualization
-  // 5. Improve query performance with proper indexing
+  const handleSelectAll = useCallback((properties: string[], setProperties: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setProperties(properties);
+  }, []);
 
   const handleDownload = useCallback(async () => {
     if (!selectedRelationshipType || selectedProperties.length === 0) return;
 
-    // TODO: Enhance query to include source and target node properties
-    // Example structure needed:
-    // MATCH (source)-[r:TYPE]->(target)
-    // RETURN source.prop1, r.prop1, target.prop1
+    const { source, target } = relationshipTypes[selectedRelationshipType];
     const query = `
-      MATCH ()-[r:${selectedRelationshipType}]->()
-      RETURN ${selectedProperties
-        .map((prop) => `COALESCE(r.${prop}, '') as ${prop}`)
+      MATCH (source:${source})-[r:${selectedRelationshipType}]->(target:${target})
+      RETURN ${[...selectedProperties.map((prop) => `r.${prop} AS ${prop}`),
+        ...sourceProperties.map((prop) => `source.${prop} AS source_${prop}`),
+        ...targetProperties.map((prop) => `target.${prop} AS target_${prop}`)]
         .join(', ')}
     `;
 
@@ -127,87 +55,84 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
     try {
       const { downloadData } = await onQuerySelect(query, 'download');
       if (downloadData) {
-        const data =
-          format === 'json'
-            ? downloadData.map((item: any) => {
-                // Convert empty strings back to null for JSON format
-                Object.keys(item).forEach((key) => {
-                  if (item[key] === '') {
-                    item[key] = null;
-                  }
-                });
-                return item;
-              })
-            : convertToCSV(downloadData);
-        downloadFile(data, `${selectedRelationshipType}_data.${format}`);
+        const data = downloadData.map((item: any) => {
+              Object.keys(item).forEach((key) => { if (item[key] === '') item[key] = null; });
+              return item;
+            });
+        downloadFile(data, `${selectedRelationshipType}_data.json`);
       }
     } catch (error) {
       console.error('Download failed:', error);
     }
-  }, [selectedRelationshipType, selectedProperties, format, onQuerySelect]);
+  }, [selectedRelationshipType, selectedProperties, sourceProperties, targetProperties, onQuerySelect]);
 
   return (
     <div style={styles.container}>
       <div style={styles.section}>
         <h4>1. Select Relationship Type</h4>
-        <select
-          value={selectedRelationshipType}
+        <select 
+          value={selectedRelationshipType} 
           onChange={handleRelationshipTypeChange}
           style={styles.select}
         >
-          <option value="">Select a relationship type...</option>
+          <option value="">Select a relationship type...</option> 
           {Object.values(relationshipTypes).map((rel) => (
-            <option key={rel.label} value={rel.label}>
-              {rel.label}
-            </option>
+            <option key={rel.label} value={rel.label}>{rel.label}</option>
           ))}
         </select>
       </div>
 
       {selectedRelationshipType && (
-        <div style={styles.section}>
-          <h4>2. Select Properties</h4>
-          <button onClick={handleSelectAllProperties} style={styles.selectAllButton}>
-            Select All
-          </button>
-          <div style={styles.checkboxGroup}>
-            {relationshipTypes[selectedRelationshipType].properties.map((prop) => (
-              <label key={prop} style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={selectedProperties.includes(prop)}
-                  onChange={(e) => handlePropertyChange(prop, e.target.checked)}
-                />
-                {prop}
-              </label>
-            ))}
+        <>
+          <div style={styles.section}>
+            <h4>2. Select Relationship Properties</h4>
+            <div style={styles.checkboxGroup}>
+              {relationshipTypes[selectedRelationshipType].properties.map((prop) => (
+                <label key={prop} style={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={selectedProperties.includes(prop)}
+                    onChange={(e) => handlePropertyChange(prop, e.target.checked, setSelectedProperties)}
+                  />
+                  {prop}
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
 
-      <div style={styles.section}>
-        <h4>3. Select Format</h4>
-        <div style={styles.radioGroup}>
-          <label style={styles.radioLabel}>
-            <input
-              type="radio"
-              value="json"
-              checked={format === 'json'}
-              onChange={handleFormatChange}
-            />
-            JSON
-          </label>
-          <label style={styles.radioLabel}>
-            <input
-              type="radio"
-              value="csv"
-              checked={format === 'csv'}
-              onChange={handleFormatChange}
-            />
-            CSV
-          </label>
-        </div>
-      </div>
+          <div style={styles.section}>
+            <h4>3. Select Source Node Properties ({relationshipTypes[selectedRelationshipType].source})</h4>
+            <div style={styles.checkboxGroup}>
+              {nodeTypes[relationshipTypes[selectedRelationshipType].source]?.properties.map((prop) => (
+                <label key={prop} style={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={sourceProperties.includes(prop)}
+                    onChange={(e) => handlePropertyChange(prop, e.target.checked, setSourceProperties)}
+                  />
+                  {prop}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div style={styles.section}>
+            <h4>4. Select Target Node Properties ({relationshipTypes[selectedRelationshipType].target})</h4>
+            <div style={styles.checkboxGroup}>
+              {nodeTypes[relationshipTypes[selectedRelationshipType].target]?.properties.map((prop) => (
+                <label key={prop} style={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={targetProperties.includes(prop)}
+                    onChange={(e) => handlePropertyChange(prop, e.target.checked, setTargetProperties)}
+                  />
+                  {prop}
+                </label>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <button
         onClick={handleDownload}
@@ -233,15 +158,6 @@ const styles = {
     borderRadius: '4px',
     border: '1px solid #ddd'
   },
-  selectAllButton: {
-    padding: '6px 12px',
-    marginBottom: '10px',
-    backgroundColor: '#4a90e2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
   checkboxGroup: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
@@ -264,6 +180,15 @@ const styles = {
   downloadButton: {
     padding: '10px 20px',
     backgroundColor: '#4a90e2',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer'
+  },
+  selectAllButton: {
+    padding: '6px 12px',
+    marginBottom: '10px',
+    backgroundColor: '#6c757d',
     color: 'white',
     border: 'none',
     borderRadius: '4px',
