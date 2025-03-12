@@ -55,10 +55,10 @@ const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
   return (
     <div style={styles.outerContainer}>
       <div style={styles.card} className="card">
-        <h2 style={styles.header}>Vulnerability Description Embeddings</h2>
+        <h2 style={styles.header}>LLM-Based Vulnerability Description Embeddings</h2>
         <p style={styles.description}>
           Download pre-embedded vulnerability descriptions using our unified embedding model.
-          These embeddings can be used for semantic search, clustering, and other NLP tasks.
+          These embeddings can be used for exploitability prediction, coexploitation behavior discovery, and other NLP tasks.
         </p>
         
         {/* Year Selection */}
