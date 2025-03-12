@@ -2,7 +2,6 @@ import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
 import { nodeTypes } from '../../schema/nodeConfigs';
 import CheckboxList from './shared/CheckboxList';
-import { selectAll } from 'd3';
 
 interface NodeDownloadProps {
   /**

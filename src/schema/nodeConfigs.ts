@@ -14,7 +14,7 @@ export const nodeTypes = {
     properties: [
       'cveID',
       'publishedDate',
-      'description_value',
+      'description',
       'num_reference',
       'v2version',
       'v2baseScore',
