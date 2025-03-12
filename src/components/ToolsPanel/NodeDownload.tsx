@@ -1,124 +1,49 @@
 import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
-import {
-  Vulnerability,
-  Exploit,
-  Weakness,
-  Product,
-  Vendor,
-  Author,
-  Domain,
-  GraphNode
-} from '../../schema/nodes';
+import { nodeTypes } from '../../schema/nodeConfigs';
+import CheckboxList from './shared/CheckboxList';
+import { selectAll } from 'd3';
 
 interface NodeDownloadProps {
+  /**
+   * Callback function to execute a query with a given purpose.
+   * @param query - The generated Cypher query.
+   * @param purpose - A string indicating the query purpose (e.g., 'download').
+   * @returns A Promise resolving with the query results.
+   */
   onQuerySelect: (query: string, purpose: string) => Promise<any>;
 }
 
-const nodeTypes = {
-  Vulnerability: {
-    label: 'Vulnerability',
-    properties: [
-      'cveID',
-      'publishedDate',
-      'description_value',
-      'num_reference',
-      'v2version',
-      'v2baseScore',
-      'v2accessVector',
-      'v2accessComplexity',
-      'v2authentication',
-      'v2confidentialityImpact',
-      'v2integrityImpact',
-      'v2availabilityImpact',
-      'v2vectorString',
-      'v2impactScore',
-      'v2exploitabilityScore',
-      'v2userInteractionRequired',
-      'v2severity',
-      'v2obtainUserPrivilege',
-      'v2obtainAllPrivilege',
-      'v2acInsufInfo',
-      'v2obtainOtherPrivilege',
-      'v3version',
-      'v3baseScore',
-      'v3attackVector',
-      'v3attackComplexity',
-      'v3privilegesRequired',
-      'v3userInteraction',
-      'v3scope',
-      'v3confidentialityImpact',
-      'v3integrityImpact',
-      'v3availabilityImpact',
-      'v3vectorString',
-      'v3impactScore',
-      'v3exploitabilityScore',
-      'v3baseSeverity'
-    ] as Array<keyof Vulnerability>
-  },
-  Exploit: {
-    label: 'Exploit',
-    properties: [
-      'eid',
-      'exploitType',
-      'platform',
-      'exploitPublishDate'
-    ] as Array<keyof Exploit>
-  },
-  Weakness: {
-    label: 'Weakness',
-    properties: [
-      'cweID',
-      'description',
-      'cweName',
-      'extendedDescription',
-      'weaknessAbstraction',
-      'cweView',
-      'status'
-    ] as Array<keyof Weakness>
-  },
-  Product: {
-    label: 'Product',
-    properties: [
-      'productName',
-      'productType'
-    ] as Array<keyof Product>
-  },
-  Vendor: {
-    label: 'Vendor',
-    properties: [
-      'vendorName'
-    ] as Array<keyof Vendor>
-  },
-  Author: {
-    label: 'Author',
-    properties: [
-      'authorName'
-    ] as Array<keyof Author>
-  },
-  Domain: {
-    label: 'Domain',
-    properties: [
-      'domainName'
-    ] as Array<keyof Domain>
-  }
-} as const;
-
+/**
+ * NodeDownload Component
+ *
+ * Provides a UI for selecting a node type and its properties, and choosing a download format (JSON or CSV).
+ * Generates a Cypher query based on the selections and triggers a file download with the retrieved data.
+ *
+ * @param props - Component properties.
+ */
 const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
+  // State variables to manage the selected node type, properties, and file format.
   const [selectedNodeType, setSelectedNodeType] = useState<keyof typeof nodeTypes | ''>('');
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [format, setFormat] = useState<'json' | 'csv'>('json');
 
-  const handleNodeTypeChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const type = e.target.value as keyof typeof nodeTypes;
-      setSelectedNodeType(type);
-      // Reset properties if node type changes
-      setSelectedProperties([]);
-    },
-    []
-  );
+  /**
+   * Handles the change event for node type selection.
+   */
+  const handleNodeTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const type = e.target.value as keyof typeof nodeTypes;
+    setSelectedNodeType(type);
+    // Reset property selections when node type changes.
+    setSelectedProperties([]);
+  }, []);
 
+  /**
+   * Toggles the selection of a property.
+   *
+   * @param prop - The property name.
+   * @param checked - Whether the property is selected.
+   */
   const handlePropertyChange = useCallback(
     (prop: string, checked: boolean) => {
       setSelectedProperties((prev) =>
@@ -128,18 +53,26 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
     []
   );
 
+  /**
+   * Selects all available properties for the chosen node type.
+   */
   const handleSelectAllProperties = useCallback(() => {
     if (!selectedNodeType) return;
     setSelectedProperties(nodeTypes[selectedNodeType].properties);
   }, [selectedNodeType]);
 
-  const handleFormatChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFormat(e.target.value as 'json' | 'csv');
-    },
-    []
-  );
+  /**
+   * Handles changes to the download format.
+   *
+   * @param e - The change event from the format radio button.
+   */
+  const handleFormatChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormat(e.target.value as 'json' | 'csv');
+  }, []);
 
+  /**
+   * Generates the query based on the selections and triggers the file download.
+   */
   const handleDownload = useCallback(async () => {
     if (!selectedNodeType || selectedProperties.length === 0) return;
 
@@ -156,14 +89,12 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
         const data =
           format === 'json'
             ? downloadData.map((item: any) => {
-                // Convert empty strings back to null for JSON format
-                Object.keys(item).forEach((key) => {
-                  if (item[key] === '') {
-                    item[key] = null;
-                  }
-                });
-                return item;
-              })
+              // Convert empty strings to null in JSON format.
+              Object.keys(item).forEach((key) => {
+                if (item[key] === '') item[key] = null;
+              });
+              return item;
+            })
             : convertToCSV(downloadData);
         downloadFile(data, `${selectedNodeType}_data.${format}`);
       }
@@ -191,28 +122,15 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
       </div>
 
       {selectedNodeType && (
-        <div style={styles.section}>
-          <h4>2. Select Properties</h4>
-          <button
-            onClick={handleSelectAllProperties}
-            style={styles.selectAllButton}
-          >
-            Select All
-          </button>
-          <div style={styles.checkboxGroup}>
-            {nodeTypes[selectedNodeType].properties.map((prop) => (
-              <label key={prop} style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={selectedProperties.includes(prop)}
-                  onChange={(e) => handlePropertyChange(prop, e.target.checked)}
-                />
-                {prop}
-              </label>
-            ))}
-          </div>
-        </div>
+        <CheckboxList
+          options={nodeTypes[selectedNodeType].properties}
+          selectedOptions={selectedProperties}
+          onChange={handlePropertyChange}
+          onSelectAll={handleSelectAllProperties}
+          label="Select Properties"
+        />
       )}
+
 
       <div style={styles.section}>
         <h4>3. Select Format</h4>
@@ -261,25 +179,6 @@ const styles = {
     padding: '8px',
     borderRadius: '4px',
     border: '1px solid #ddd'
-  },
-  selectAllButton: {
-    padding: '6px 12px',
-    marginBottom: '10px',
-    backgroundColor: '#4a90e2',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer'
-  },
-  checkboxGroup: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: '10px'
-  },
-  checkboxLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px'
   },
   radioGroup: {
     display: 'flex',
