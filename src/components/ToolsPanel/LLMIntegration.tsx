@@ -2,115 +2,85 @@ import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { downloadFile } from '../../utils/download';
 
-type ModelType = 'sbert' | 'hf' | 'llama';
-
-interface ModelOption {
-  value: string;
-  label: string;
-}
-
-const modelOptions: Record<ModelType, ModelOption[]> = {
-  sbert: [
-    { value: 'all-MiniLM-L6-v2', label: 'Sentence Transformer: all-MiniLM-L6-v2' },
-    { value: 'paraphrase-MiniLM-L6-v2', label: 'Sentence Transformer: paraphrase-MiniLM-L6-v2' },
-    { value: 'all-mpnet-base-v2', label: 'Sentence Transformer: all-mpnet-base-v2' },
-    { value: 'multi-qa-mpnet-base-cos-v1', label: 'Sentence Transformer: multi-qa-mpnet-base-cos-v1' }
-  ],
-  hf: [
-    { value: 'distilbert-base-uncased', label: 'DistilBERT: distilbert-base-uncased' },
-    { value: 'bert-base-uncased', label: 'BERT: bert-base-uncased' },
-    { value: 'roberta-base', label: 'RoBERTa: roberta-base' },
-    { value: 'xlm-roberta-base', label: 'XLM-RoBERTa: xlm-roberta-base' },
-    { value: 'albert-base-v2', label: 'ALBERT: albert-base-v2' }
-  ],
-  llama: [
-    { value: 'TheBloke/guanaco-7B', label: 'LLaMA (Public): TheBloke/guanaco-7B' }
-  ]
-};
-
 interface LLMIntegrationProps {
   onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm') => Promise<any>;
 }
 
+/**
+ * LLMIntegration Component
+ * 
+ * Provides a UI for downloading pre-embedded vulnerability descriptions
+ * using a single embedding model. This component allows users to select
+ * the year of vulnerabilities, embedding dimension, and download format.
+ */
 const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
-  const [modelType, setModelType] = useState<ModelType>('sbert');
-  const [modelName, setModelName] = useState<string>(modelOptions['sbert'][0].value);
   const [year, setYear] = useState<string>('2020');
   const [embeddingDim, setEmbeddingDim] = useState<string>('20');
-  const [fileFormat, setFileFormat] = useState<string>('pkl');
+  const [fileFormat, setFileFormat] = useState<string>('csv');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Generate list of years from 1999 to current year
   const currentYear = new Date().getFullYear();
   const years: number[] = [];
   for (let y = 1999; y <= currentYear; y++) {
     years.push(y);
   }
 
-  const handleModelTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newModelType = e.target.value as ModelType;
-    setModelType(newModelType);
-    setModelName(modelOptions[newModelType][0].value);
-  };
-
+  /**
+   * Handles the download of pre-embedded vulnerability descriptions
+   */
   const handleDownload = async () => {
-    // Build query string for the LLM backend.
-    const query = `model_name=${modelName}&model_type=${modelType}&year=${year}&embedding_dim=${embeddingDim}&file_format=${fileFormat}`;
-    console.log(query);
+    setLoading(true);
+    setError(null);
+    
+    // Build query string with the required parameters
+    const query = `year=${year}&embedding_dimension=${embeddingDim}&file_format=${fileFormat}`;
+    
     try {
       const result = await onQuerySelect(query, 'llm');
-      downloadFile(result, `llm_embeddings.${fileFormat}`);
+      if (result && result.data) {
+        downloadFile(result.data, `vulnerability_embeddings_${year}_dim${embeddingDim}.${fileFormat}`);
+      } else {
+        setError("No embedding data available for the selected year");
+      }
     } catch (error) {
-      console.error('LLM Embedding retrieval failed:', error);
+      console.error('Download failed:', error);
+      setError(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div style={styles.outerContainer}>
       <div style={styles.card} className="card">
-        <h2 style={styles.header}>LLM Representation for Vulnerability Descriptions</h2>
-        {/* First Row */}
+        <h2 style={styles.header}>Vulnerability Description Embeddings</h2>
+        <p style={styles.description}>
+          Download pre-embedded vulnerability descriptions using our unified embedding model.
+          These embeddings can be used for semantic search, clustering, and other NLP tasks.
+        </p>
+        
+        {/* Year Selection */}
         <div style={styles.formRow}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Model Type</label>
-            <select
-              className="llm-input"
-              style={styles.input}
-              value={modelType}
-              onChange={handleModelTypeChange}
-            >
-              <option value="sbert">Sentence Transformer (sbert)</option>
-              <option value="hf">Hugging Face (hf)</option>
-              <option value="llama">LLaMA (Public)</option>
-            </select>
-          </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Model Name</label>
-            <select
-              className="llm-input"
-              style={styles.input}
-              value={modelName}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setModelName(e.target.value)}
-            >
-              {modelOptions[modelType].map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>Year</label>
             <select
               className="llm-input"
               style={styles.input}
               value={year}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setYear(e.target.value)}
+              onChange={(e) => setYear(e.target.value)}
+              disabled={loading}
             >
-              {years.map(yr => (
-                <option key={yr} value={yr}>{yr}</option>
+              {years.map((yr) => (
+                <option key={yr} value={yr}>
+                  {yr}
+                </option>
               ))}
             </select>
           </div>
-        </div>
-        {/* Second Row */}
-        <div style={styles.formRow}>
+        
+          {/* Embedding Dimension */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Embedding Dimension</label>
             <input
@@ -118,25 +88,57 @@ const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
               type="number"
               style={styles.input}
               value={embeddingDim}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmbeddingDim(e.target.value)}
+              onChange={(e) => setEmbeddingDim(e.target.value)}
+              min="10"
+              max="100"
+              disabled={loading}
             />
           </div>
+        </div>
+        
+        {/* File Format */}
+        <div style={styles.formRow}>
           <div style={styles.formGroup}>
             <label style={styles.label}>File Format</label>
             <select
               className="llm-input"
               style={styles.input}
               value={fileFormat}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFileFormat(e.target.value)}
+              onChange={(e) => setFileFormat(e.target.value)}
+              disabled={loading}
             >
-              <option value="pkl">PKL</option>
               <option value="csv">CSV</option>
+              <option value="pkl">PKL</option>
+              <option value="json">JSON</option>
             </select>
           </div>
         </div>
-        <button className="llm-button" style={styles.button} onClick={handleDownload}>
-          <Download style={styles.icon} size={20} />
-          Download Embeddings
+
+        {/* Error message */}
+        {error && (
+          <div style={styles.errorMessage} role="alert">
+            {error}
+          </div>
+        )}
+        
+        {/* Download button */}
+        <button
+          className="llm-button"
+          style={{
+            ...styles.button,
+            ...(loading ? styles.disabledButton : {})
+          }}
+          onClick={handleDownload}
+          disabled={loading}
+        >
+          {loading ? (
+            "Loading..."
+          ) : (
+            <>
+              <Download style={styles.icon} size={20} />
+              Download Embeddings
+            </>
+          )}
         </button>
       </div>
       <style>{`
@@ -151,11 +153,14 @@ const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
         .llm-button {
           transition: background-color 0.2s ease, transform 0.1s ease;
         }
-        .llm-button:hover {
+        .llm-button:hover:not(:disabled) {
           background-color: #005fa3 !important;
         }
-        .llm-button:active {
+        .llm-button:active:not(:disabled) {
           transform: scale(0.98);
+        }
+        .card {
+          transition: box-shadow 0.3s ease;
         }
         .card:hover {
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
@@ -182,9 +187,15 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   header: {
     fontSize: '1.8rem',
-    marginBottom: '24px',
+    marginBottom: '16px',
     textAlign: 'center',
     color: '#333'
+  },
+  description: {
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: '24px',
+    lineHeight: '1.5'
   },
   formRow: {
     display: 'flex',
@@ -222,8 +233,21 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: 'center',
     marginTop: '16px'
   },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    cursor: 'not-allowed',
+    opacity: 0.7
+  },
   icon: {
     marginRight: '8px'
+  },
+  errorMessage: {
+    backgroundColor: '#f8d7da',
+    color: '#721c24',
+    padding: '10px',
+    borderRadius: '4px',
+    marginBottom: '15px',
+    fontSize: '14px'
   }
 };
 

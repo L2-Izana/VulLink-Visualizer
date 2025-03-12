@@ -37,6 +37,8 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [sourceProperties, setSourceProperties] = useState<string[]>([]);
   const [targetProperties, setTargetProperties] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Handles changes to the relationship type selection.
@@ -47,6 +49,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
     setSelectedProperties([]);
     setSourceProperties([]);
     setTargetProperties([]);
+    setError(null);
   }, []);
 
   /**
@@ -96,6 +99,9 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
       return;
     }
 
+    setIsLoading(true);
+    setError(null);
+
     const { source, target } = relationshipTypes[selectedRelationshipType];
     const query = `
       MATCH (source:${source})-[r:${selectedRelationshipType}]->(target:${target})
@@ -109,18 +115,24 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
 
     try {
       const { downloadData } = await onQuerySelect(query, 'download');
-      if (downloadData) {
+      if (downloadData && downloadData.length > 0) {
         // Replace empty strings with null.
         const data = downloadData.map((item: any) => {
-          Object.keys(item).forEach((key) => {
-            if (item[key] === '') item[key] = null;
+          const cleanedItem = { ...item };
+          Object.keys(cleanedItem).forEach((key) => {
+            if (cleanedItem[key] === '') cleanedItem[key] = null;
           });
-          return item;
+          return cleanedItem;
         });
         downloadFile(data, `${selectedRelationshipType}_data.json`);
+      } else {
+        setError("No data found for the selected relationship type and properties");
       }
     } catch (error) {
       console.error('Download failed:', error);
+      setError(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
     }
   }, [
     selectedRelationshipType,
@@ -144,6 +156,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
           value={selectedRelationshipType}
           onChange={handleRelationshipTypeChange}
           style={styles.select}
+          disabled={isLoading}
         >
           <option value="">Select a relationship type...</option>
           {Object.values(relationshipTypes).map((rel) => (
@@ -173,6 +186,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                   )
                 }
                 label="Relationship Properties"
+                disabled={isLoading}
               />
             ) : (
               <p style={styles.noPropertiesMessage}>No properties to select</p>
@@ -198,6 +212,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                 )
               }
               label="Source Node Properties"
+              disabled={isLoading}
             />
           </div>
 
@@ -220,17 +235,27 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                 )
               }
               label="Target Node Properties"
+              disabled={isLoading}
             />
           </div>
         </>
       )}
 
+      {error && (
+        <div style={styles.errorMessage} role="alert">
+          {error}
+        </div>
+      )}
+
       <button
         onClick={handleDownload}
-        disabled={isDownloadDisabled}
-        style={styles.downloadButton}
+        disabled={isDownloadDisabled || isLoading}
+        style={{
+          ...styles.downloadButton,
+          ...((isDownloadDisabled || isLoading) ? styles.disabledButton : {})
+        }}
       >
-        Download Data
+        {isLoading ? 'Loading...' : 'Download Data'}
       </button>
     </div>
   );
@@ -255,11 +280,26 @@ const styles = {
     color: 'white',
     border: 'none',
     borderRadius: '4px',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    transition: 'background-color 0.2s ease'
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    cursor: 'not-allowed',
+    opacity: 0.7
   },
   noPropertiesMessage: {
     color: '#666',
     fontStyle: 'italic'
+  },
+  errorMessage: {
+    backgroundColor: '#f8d7da',
+    color: '#721c24',
+    padding: '10px',
+    borderRadius: '4px',
+    marginBottom: '15px',
+    fontSize: '14px'
   }
 } as const;
 

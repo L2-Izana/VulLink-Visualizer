@@ -26,6 +26,8 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
   const [selectedNodeType, setSelectedNodeType] = useState<keyof typeof nodeTypes | ''>('');
   const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
   const [format, setFormat] = useState<'json' | 'csv'>('json');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Handles the change event for node type selection.
@@ -35,6 +37,7 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
     setSelectedNodeType(type);
     // Reset property selections when node type changes.
     setSelectedProperties([]);
+    setError(null);
   }, []);
 
   /**
@@ -57,7 +60,7 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
    */
   const handleSelectAllProperties = useCallback(() => {
     if (!selectedNodeType) return;
-    setSelectedProperties(nodeTypes[selectedNodeType].properties);
+    setSelectedProperties([...nodeTypes[selectedNodeType].properties]);
   }, [selectedNodeType]);
 
   /**
@@ -75,6 +78,9 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
   const handleDownload = useCallback(async () => {
     if (!selectedNodeType || selectedProperties.length === 0) return;
 
+    setIsLoading(true);
+    setError(null);
+
     const query = `
       MATCH (n:${selectedNodeType}) 
       RETURN ${selectedProperties
@@ -84,21 +90,27 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
 
     try {
       const { downloadData } = await onQuerySelect(query, 'download');
-      if (downloadData) {
+      if (downloadData && downloadData.length > 0) {
         const data =
           format === 'json'
             ? downloadData.map((item: any) => {
               // Convert empty strings to null in JSON format.
-              Object.keys(item).forEach((key) => {
-                if (item[key] === '') item[key] = null;
+              const cleanedItem = { ...item };
+              Object.keys(cleanedItem).forEach((key) => {
+                if (cleanedItem[key] === '') cleanedItem[key] = null;
               });
-              return item;
+              return cleanedItem;
             })
             : convertToCSV(downloadData);
         downloadFile(data, `${selectedNodeType}_data.${format}`);
+      } else {
+        setError("No data found for the selected node type and properties");
       }
     } catch (error) {
       console.error('Download failed:', error);
+      setError(`Download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
     }
   }, [selectedNodeType, selectedProperties, format, onQuerySelect]);
 
@@ -110,6 +122,7 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
           value={selectedNodeType}
           onChange={handleNodeTypeChange}
           style={styles.select}
+          disabled={isLoading}
         >
           <option value="">Select a node type...</option>
           {Object.values(nodeTypes).map((type) => (
@@ -121,15 +134,18 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
       </div>
 
       {selectedNodeType && (
-        <CheckboxList
-          options={nodeTypes[selectedNodeType].properties}
-          selectedOptions={selectedProperties}
-          onChange={handlePropertyChange}
-          onSelectAll={handleSelectAllProperties}
-          label="Select Properties"
-        />
+        <div style={styles.section}>
+          <h4>2. Select Properties</h4>
+          <CheckboxList
+            options={[...nodeTypes[selectedNodeType].properties]}
+            selectedOptions={selectedProperties}
+            onChange={handlePropertyChange}
+            onSelectAll={handleSelectAllProperties}
+            label="Select Properties"
+            disabled={isLoading}
+          />
+        </div>
       )}
-
 
       <div style={styles.section}>
         <h4>3. Select Format</h4>
@@ -140,6 +156,7 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
               value="json"
               checked={format === 'json'}
               onChange={handleFormatChange}
+              disabled={isLoading}
             />
             JSON
           </label>
@@ -149,18 +166,30 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
               value="csv"
               checked={format === 'csv'}
               onChange={handleFormatChange}
+              disabled={isLoading}
             />
             CSV
           </label>
         </div>
       </div>
 
+      {error && (
+        <div style={styles.errorMessage} role="alert">
+          {error}
+        </div>
+      )}
+
       <button
         onClick={handleDownload}
-        disabled={!selectedNodeType || selectedProperties.length === 0}
-        style={styles.downloadButton}
+        disabled={!selectedNodeType || selectedProperties.length === 0 || isLoading}
+        style={{
+          ...styles.downloadButton,
+          ...((!selectedNodeType || selectedProperties.length === 0 || isLoading) 
+            ? styles.disabledButton 
+            : {})
+        }}
       >
-        Download Data
+        {isLoading ? 'Loading...' : 'Download Data'}
       </button>
     </div>
   );
@@ -194,8 +223,23 @@ const styles = {
     color: 'white',
     border: 'none',
     borderRadius: '4px',
-    cursor: 'pointer'
-  } as React.CSSProperties
-};
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    transition: 'background-color 0.2s ease'
+  },
+  disabledButton: {
+    backgroundColor: '#cccccc',
+    cursor: 'not-allowed',
+    opacity: 0.7
+  },
+  errorMessage: {
+    backgroundColor: '#f8d7da',
+    color: '#721c24',
+    padding: '10px',
+    borderRadius: '4px',
+    marginBottom: '15px',
+    fontSize: '14px'
+  }
+} as const;
 
 export default NodeDownload;
