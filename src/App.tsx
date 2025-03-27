@@ -15,13 +15,14 @@ const CONFIG = {
   neo4j: {
     url: process.env.REACT_APP_NEO4J_URL || 'bolt://localhost:7687',
     user: process.env.REACT_APP_NEO4J_USER || 'neo4j',
-    password: process.env.REACT_APP_NEO4J_PASSWORD || ''
+    password: process.env.REACT_APP_NEO4J_PASSWORD || 'neo4j'
   },
   backend: {
     url: process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
   }
 };
 
+console.log(CONFIG.backend.url);
 const neo4jService = new Neo4jService(
   CONFIG.neo4j.url,
   CONFIG.neo4j.user,
@@ -31,7 +32,7 @@ const neo4jService = new Neo4jService(
 interface QueryResult {
   graphData?: GraphData;
   downloadData?: any[];
-llmData?: Blob;  // Add this for LLM response data
+  llmData?: Blob;  // Add this for LLM response data
 }
 
 /**
@@ -76,13 +77,14 @@ const App: React.FC = () => {
         }
   
         case 'llm': {
-          const backendUrl = `${CONFIG.backend.url}/get_embeddings?${query}`;
+          const backendUrl = `${CONFIG.backend.url}/llm_embedding?${query}`;
           console.log('LLM Request URL:', backendUrl);
           const response = await fetch(backendUrl);
           if (!response.ok) {
             throw new Error('Failed to fetch LLM embeddings');
           }
-          const data = await response.blob();
+          const data = await response.json();
+          console.log('LLM Data:', data);
           return { llmData: data };
         }
   

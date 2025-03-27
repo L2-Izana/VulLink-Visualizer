@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Download } from 'lucide-react';
-import { downloadFile } from '../../utils/download';
+import { convertToCSV, downloadFile } from '../../utils/download';
 
 interface LLMIntegrationProps {
   onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm') => Promise<any>;
@@ -14,7 +14,7 @@ interface LLMIntegrationProps {
  * the year of vulnerabilities, embedding dimension, and download format.
  */
 const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
-  const [year, setYear] = useState<string>('2020');
+  const [year, setYear] = useState<string>('1999');
   const [embeddingDim, setEmbeddingDim] = useState<string>('20');
   const [fileFormat, setFileFormat] = useState<string>('csv');
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,15 +34,67 @@ const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
     setLoading(true);
     setError(null);
     
-    // Build query string with the required parameters
-    const query = `year=${year}&embedding_dimension=${embeddingDim}&file_format=${fileFormat}`;
+    // Build query string with the required parameters: year and dim_size (file_format will be handled in the frontend)
+    const query = `year=${year}&dim_size=${embeddingDim}`;
     
     try {
       const result = await onQuerySelect(query, 'llm');
-      if (result && result.data) {
-        downloadFile(result.data, `vulnerability_embeddings_${year}_dim${embeddingDim}.${fileFormat}`);
-      } else {
-        setError("No embedding data available for the selected year");
+
+      if (!result){
+        throw new Error("Result is null");
+      }
+      else if (!result.llmData){
+        throw new Error("LLM data is null");
+      }
+      else{
+      const { embeddings, cveIDs, count } = result.llmData;
+      // Combine embeddings with cveIDs into an array of objects
+      const combinedData = embeddings.map((embedding: number[], index: number) => ({
+        cveID: cveIDs[index],
+        embedding: embedding
+      }));
+      let downloadData;
+      switch (fileFormat) {
+        case 'csv':
+          // For CSV, keep embeddings as a single column with array format
+          const flattenedData = combinedData.map((item: any) => ({
+            cveID: item.cveID,
+            embeddings: `[${item.embedding.join(',')}]` // Convert array to string representation
+          }));
+          downloadData = convertToCSV(flattenedData);
+          break;
+          
+        case 'json':
+          // For JSON, keep the original structure but rename 'embedding' to 'embeddings'
+          downloadData = combinedData.map((item: any) => ({
+            cveID: item.cveID,
+            embeddings: item.embedding // Just rename the field
+          }));
+          break;
+          
+        case 'pkl':
+          // For pickle format, maintain the same two-column structure
+          downloadData = {
+            data: combinedData.map((item: any) => ({
+              cveID: item.cveID,
+              embeddings: item.embedding
+            })),
+            metadata: {
+              count: count,
+              dimension: embeddingDim
+            }
+          };
+          break;
+          
+        default:
+          throw new Error(`Unsupported file format: ${fileFormat}`);
+      }
+      console.log(downloadData);
+      downloadFile(
+        downloadData, 
+        `vulnerability_embeddings_${year}_dim${embeddingDim}.${fileFormat}`
+        );
+        console.log("Downloaded");
       }
     } catch (error) {
       console.error('Download failed:', error);

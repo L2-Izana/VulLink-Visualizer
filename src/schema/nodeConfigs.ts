@@ -15,7 +15,7 @@ export const nodeTypes = {
       'cveID',
       'publishedDate',
       'description',
-      'num_reference',
+      'numOfReference',
       'v2version',
       'v2baseScore',
       'v2accessVector',
@@ -46,7 +46,8 @@ export const nodeTypes = {
       'v3vectorString',
       'v3impactScore',
       'v3exploitabilityScore',
-      'v3baseSeverity'
+      'v3baseSeverity',
+      'vulnerabilityType',
     ] as Array<keyof Vulnerability>
   },
   Exploit: {
@@ -66,7 +67,6 @@ export const nodeTypes = {
       'cweName',
       'extendedDescription',
       'weaknessAbstraction',
-      'cweView',
       'status'
     ] as Array<keyof Weakness>
   },
