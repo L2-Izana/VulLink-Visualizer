@@ -119,28 +119,33 @@ const App: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           flex: '1 1 70%',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          maxHeight: '100%' // Ensure it doesn't exceed viewport height
         }}>
           <header style={{
-            backgroundColor: '#4B0082', // Dark purple header instead of blue
+            backgroundColor: '#4B0082',
             color: 'white',
             padding: '15px 20px',
             textAlign: 'center',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+            boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+            flex: '0 0 auto' // Don't grow or shrink
           }}>
             <h1 style={{ margin: 0, fontSize: '1.4rem' }}>
               VulLink: An Intelligent Dynamic Open-Access Vulnerability Graph Database
             </h1>
           </header>
-          {/* Graph visualization */}
+          
+          {/* Graph visualization container */}
           <div style={{
-            flex: 1,
+            flex: '1 1 auto',
             position: 'relative',
-            margin: '20px',
+            margin: '20px 20px 10px 20px', // Reduced bottom margin
             backgroundColor: 'white',
             borderRadius: '12px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            minHeight: '60%', // Use percentage instead of vh
+            height: 'calc(100% - 220px)' // Explicit calculation of height
           }}>
             <GraphVisualization
               data={graphData}
@@ -149,7 +154,12 @@ const App: React.FC = () => {
           </div>
 
           {/* Cypher query editor */}
-          <div style={{ flex: '0 0 auto', padding: '0 20px 20px' }}>
+          <div style={{ 
+            flex: '0 0 auto',
+            padding: '0 20px 20px',
+            height: '180px', // Fixed height
+            maxHeight: '180px'
+          }}>
             <CypherFrame
               runQuery={handleRunQuery}
               error={error}
@@ -162,9 +172,9 @@ const App: React.FC = () => {
         <div style={{
           flex: '0 0 30%',
           maxWidth: '400px',
-          overflow: 'auto',
+          overflow: 'auto', // Allow scrolling if content is too large
           borderLeft: '1px solid #d0e4ff',
-          backgroundColor: 'white' // White background for tools panel
+          backgroundColor: 'white'
         }}>
           <ToolsPanel onQuerySelect={handleRunQuery} />
         </div>

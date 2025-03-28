@@ -53,22 +53,22 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
 
     return (
         <div style={containerStyle}>
-            <h2 style={{ margin: '0 0 15px 0', color: '#1A2980', textAlign: 'center' as const }}>
+            {/* <h2 style={{ margin: '0 0 15px 0', color: '#1A2980', textAlign: 'center' as const }}>
                 Tools Panel
-            </h2>
+            </h2> */}
             
             <div style={tabsContainerStyle}>
                 <button
                     onClick={() => setActiveTab('samples')}
                     style={tabStyle(activeTab === 'samples')}
                 >
-                    Sample Queries
+                    Graph Explorer
                 </button>
                 <button
                     onClick={() => setActiveTab('subgraph')}
                     style={tabStyle(activeTab === 'subgraph')}
                 >
-                    Subgraph QA
+                    Q&A Demo
                 </button>
                 <button
                     onClick={() => setActiveTab('llm')}

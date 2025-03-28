@@ -148,43 +148,47 @@ const CypherFrame: React.FC<CypherFrameProps> = ({ runQuery, error, warning }) =
   return (
     <div
       style={{
-        margin: '20px',
-        padding: '15px',
+        margin: '10px',
+        padding: '10px',
         border: '1px solid #ccc',
         backgroundColor: '#fff',
         borderRadius: '8px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}
     >
-      <h2 style={{ color: '#333', marginBottom: '15px' }}>Cypher Query</h2>
+      
+      {/* Error and warning messages */}
       {error && (
         <div style={{
-          padding: '10px',
-          marginBottom: '10px',
+          padding: '5px 10px',
+          marginBottom: '8px',
           backgroundColor: '#ffebee',
           border: '1px solid #ffcdd2',
           borderRadius: '4px',
-          color: '#c62828'
+          color: '#c62828',
+          fontSize: '13px'
         }}>
           Error: {error}
         </div>
       )}
       {warning && (
         <div style={{
-          padding: '10px',
-          marginBottom: '10px',
+          padding: '5px 10px',
+          marginBottom: '8px',
           backgroundColor: '#fff3e0',
           border: '1px solid #ffe0b2',
           borderRadius: '4px',
-          color: '#e65100'
+          color: '#e65100',
+          fontSize: '13px'
         }}>
           {warning}
         </div>
       )}
 
-      <div style={{ height: '200px', border: '1px solid #ddd', borderRadius: '4px' }}>
+      {/* Reduce height to 120px */}
+      <div style={{ height: '120px', border: '1px solid #ddd', borderRadius: '4px' }}>
         <Editor
-          height="200px"
+          height="120px"
           defaultLanguage="cypher"
           defaultValue={query}
           onChange={(value) => setQuery(value || '')}
@@ -192,34 +196,37 @@ const CypherFrame: React.FC<CypherFrameProps> = ({ runQuery, error, warning }) =
           options={{
             minimap: { enabled: false },
             lineNumbers: 'on',
-            fontSize: 14,
+            fontSize: 18,
             scrollBeyondLastLine: false,
             automaticLayout: true,
-            padding: { top: 10 },
+            padding: { top: 5 },
             quickSuggestions: true,
             suggestOnTriggerCharacters: true
           }}
         />
       </div>
       
-      <button
-        onClick={handleRunQuery}
-        style={{
-          marginTop: '10px',
-          padding: '10px 20px',
-          backgroundColor: '#4B0082', // Match header color
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          transition: 'background-color 0.3s ease',
-          fontWeight: 'bold'
-        }}
-        onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#6A0DAD')}
-        onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4B0082')}
-      >
-        Run Query
-      </button>
+      {/* Make the button more visible */}
+      <div style={{ textAlign: 'center', marginTop: '10px' }}>
+        <button
+          onClick={handleRunQuery}
+          style={{
+            padding: '8px 20px',
+            backgroundColor: '#4B0082',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            transition: 'background-color 0.3s ease',
+            fontWeight: 'bold',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#6A0DAD')}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#4B0082')}
+        >
+          Run Query
+        </button>
+      </div>
     </div>
   );
 };
