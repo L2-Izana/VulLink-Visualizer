@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PanelContainer from './shared/PanelContainer';
 
 interface SampleVisualizationProps {
   onQuerySelect: (query: string) => void;
@@ -94,15 +95,11 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
   };
 
   return (
-    <div style={styles.container}>
-      <h3 style={styles.title}>Graph Explorer</h3>
-      <p style={styles.description}>
-        Explore the Vulnerability Knowledge Graph by selecting node types or relationships. 
-        Click any button to visualize examples in the graph and discover connections between vulnerabilities, 
-        exploits, products, and more.
-      </p>
-      
-      <div style={styles.tableContainer}>
+    <PanelContainer 
+      title="Graph Explorer"
+      description="Explore the Vulnerability Knowledge Graph by selecting node types or relationships. Click any button to visualize examples in the graph and discover connections between vulnerabilities, exploits, products, and more."
+    >
+      <div style={styles.tableLayout}>
         <div style={styles.tableRow}>
           <div style={styles.tableHeader}>Relationships</div>
           <div style={styles.tableHeader}>Nodes</div>
@@ -167,40 +164,25 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
           {tooltipInfo.text}
         </div>
       )}
-    </div>
+    </PanelContainer>
   );
 };
 
 const styles = {
-  container: {
-    padding: '15px',
-    fontFamily: 'Arial, sans-serif',
-    position: 'relative' as const,
-    background: '#f8f8f8',
-    borderRadius: '10px'
-  },
-  title: {
-    fontSize: '18px',
-    margin: '0 0 15px 0',
-    color: '#2c3e50',
-    textAlign: 'center' as const,
-    fontWeight: 'bold' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '1px',
-    borderBottom: '2px solid #3498db',
-    paddingBottom: '8px'
-  },
-  tableContainer: {
+  tableLayout: {
     width: '100%',
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+    height: 'auto',
+    overflow: 'auto',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   tableRow: {
     display: 'flex',
     borderBottom: '1px solid #e0e0e0',
-    background: '#3498db'
+    background: '#3498db',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   tableHeader: {
     flex: '1 1 50%',
@@ -214,7 +196,10 @@ const styles = {
   tableContent: {
     display: 'flex',
     minHeight: '300px',
-    background: 'white'
+    background: 'white',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   tableCell: {
     flex: '1 1 50%',
@@ -286,16 +271,6 @@ const styles = {
     maxWidth: '250px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
     borderLeft: '3px solid #3498db'
-  },
-  description: {
-    fontSize: '13px',
-    color: '#5a6a7a',
-    margin: '0 0 15px 0',
-    textAlign: 'center' as const,
-    lineHeight: '1.5',
-    maxWidth: '95%',
-    marginLeft: 'auto',
-    marginRight: 'auto'
   }
 };
 

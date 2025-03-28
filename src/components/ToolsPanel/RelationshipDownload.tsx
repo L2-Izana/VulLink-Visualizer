@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
 import { nodeTypes } from '../../schema/nodeConfigs';
 import CheckboxList from './shared/CheckboxList';
+import PanelContainer from './shared/PanelContainer';
 
 interface RelationshipDownloadProps {
   /**
@@ -149,130 +150,157 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
      sourceProperties.length === 0 && targetProperties.length === 0);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.section}>
-        <h4>1. Select Relationship Type</h4>
-        <select
-          value={selectedRelationshipType}
-          onChange={handleRelationshipTypeChange}
-          style={styles.select}
-          disabled={isLoading}
-        >
-          <option value="">Select a relationship type...</option>
-          {Object.values(relationshipTypes).map((rel) => (
-            <option key={rel.label} value={rel.label}>
-              {rel.label}
-            </option>
-          ))}
-        </select>
-      </div>
+    <PanelContainer
+      title="Relationship Download"
+      description="Download relationship data from the graph database by selecting a relationship type and choosing properties from both the relationship and its connected nodes."
+    >
+      <div style={styles.formContainer}>
+        <div style={styles.section}>
+          <h4>1. Select Relationship Type</h4>
+          <select
+            value={selectedRelationshipType}
+            onChange={handleRelationshipTypeChange}
+            style={styles.select}
+            disabled={isLoading}
+          >
+            <option value="">Select a relationship type...</option>
+            {Object.values(relationshipTypes).map((rel) => (
+              <option key={rel.label} value={rel.label}>
+                {rel.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-      {selectedRelationshipType && (
-        <>
-          {/* Relationship Properties */}
-          <div style={styles.section}>
-            <h4>2. Select Relationship Properties</h4>
-            {relationshipTypes[selectedRelationshipType].properties.length > 0 ? (
+        {selectedRelationshipType && (
+          <>
+            {/* Relationship Properties */}
+            <div style={styles.section}>
+              <h4>2. Select Relationship Properties</h4>
+              {relationshipTypes[selectedRelationshipType].properties.length > 0 ? (
+                <CheckboxList
+                  options={[...relationshipTypes[selectedRelationshipType].properties]}
+                  selectedOptions={selectedProperties}
+                  onChange={(prop, checked) =>
+                    handlePropertyChange(prop, checked, setSelectedProperties)
+                  }
+                  onSelectAll={() =>
+                    handleSelectAll(
+                      relationshipTypes[selectedRelationshipType].properties,
+                      setSelectedProperties
+                    )
+                  }
+                  label="Relationship Properties"
+                  disabled={isLoading}
+                />
+              ) : (
+                <p style={styles.noPropertiesMessage}>No properties to select</p>
+              )}
+            </div>
+
+            {/* Source Node Properties */}
+            <div style={styles.section}>
+              <h4>
+                3. Select Source Node Properties (
+                {relationshipTypes[selectedRelationshipType].source})
+              </h4>
               <CheckboxList
-                options={[...relationshipTypes[selectedRelationshipType].properties]}
-                selectedOptions={selectedProperties}
+                options={
+                  relationshipTypes[selectedRelationshipType].source in nodeTypes
+                    ? [...nodeTypes[relationshipTypes[selectedRelationshipType].source as keyof typeof nodeTypes].properties]
+                    : []
+                }
+                selectedOptions={sourceProperties}
                 onChange={(prop, checked) =>
-                  handlePropertyChange(prop, checked, setSelectedProperties)
+                  handlePropertyChange(prop, checked, setSourceProperties)
                 }
                 onSelectAll={() =>
                   handleSelectAll(
-                    relationshipTypes[selectedRelationshipType].properties,
-                    setSelectedProperties
+                    relationshipTypes[selectedRelationshipType].source in nodeTypes
+                      ? nodeTypes[relationshipTypes[selectedRelationshipType].source as keyof typeof nodeTypes].properties
+                      : [],
+                    setSourceProperties
                   )
                 }
-                label="Relationship Properties"
+                label="Source Node Properties"
                 disabled={isLoading}
               />
-            ) : (
-              <p style={styles.noPropertiesMessage}>No properties to select</p>
-            )}
+            </div>
+
+            {/* Target Node Properties */}
+            <div style={styles.section}>
+              <h4>
+                4. Select Target Node Properties (
+                {relationshipTypes[selectedRelationshipType].target})
+              </h4>
+              <CheckboxList
+                options={
+                  relationshipTypes[selectedRelationshipType].target in nodeTypes
+                    ? [...nodeTypes[relationshipTypes[selectedRelationshipType].target as keyof typeof nodeTypes].properties]
+                    : []
+                }
+                selectedOptions={targetProperties}
+                onChange={(prop, checked) =>
+                  handlePropertyChange(prop, checked, setTargetProperties)
+                }
+                onSelectAll={() =>
+                  handleSelectAll(
+                    relationshipTypes[selectedRelationshipType].target in nodeTypes
+                      ? nodeTypes[relationshipTypes[selectedRelationshipType].target as keyof typeof nodeTypes].properties
+                      : [],
+                    setTargetProperties
+                  )
+                }
+                label="Target Node Properties"
+                disabled={isLoading}
+              />
+            </div>
+          </>
+        )}
+
+        {error && (
+          <div style={styles.errorMessage} role="alert">
+            {error}
           </div>
+        )}
 
-          {/* Source Node Properties */}
-          <div style={styles.section}>
-            <h4>
-              3. Select Source Node Properties (
-              {relationshipTypes[selectedRelationshipType].source})
-            </h4>
-            <CheckboxList
-              options={[...(nodeTypes[relationshipTypes[selectedRelationshipType].source]?.properties || [])]}
-              selectedOptions={sourceProperties}
-              onChange={(prop, checked) =>
-                handlePropertyChange(prop, checked, setSourceProperties)
-              }
-              onSelectAll={() =>
-                handleSelectAll(
-                  nodeTypes[relationshipTypes[selectedRelationshipType].source]?.properties || [],
-                  setSourceProperties
-                )
-              }
-              label="Source Node Properties"
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Target Node Properties */}
-          <div style={styles.section}>
-            <h4>
-              4. Select Target Node Properties (
-              {relationshipTypes[selectedRelationshipType].target})
-            </h4>
-            <CheckboxList
-              options={[...(nodeTypes[relationshipTypes[selectedRelationshipType].target]?.properties || [])]}
-              selectedOptions={targetProperties}
-              onChange={(prop, checked) =>
-                handlePropertyChange(prop, checked, setTargetProperties)
-              }
-              onSelectAll={() =>
-                handleSelectAll(
-                  nodeTypes[relationshipTypes[selectedRelationshipType].target]?.properties || [],
-                  setTargetProperties
-                )
-              }
-              label="Target Node Properties"
-              disabled={isLoading}
-            />
-          </div>
-        </>
-      )}
-
-      {error && (
-        <div style={styles.errorMessage} role="alert">
-          {error}
-        </div>
-      )}
-
-      <button
-        onClick={handleDownload}
-        disabled={isDownloadDisabled || isLoading}
-        style={{
-          ...styles.downloadButton,
-          ...((isDownloadDisabled || isLoading) ? styles.disabledButton : {})
-        }}
-      >
-        {isLoading ? 'Loading...' : 'Download Data'}
-      </button>
-    </div>
+        <button
+          onClick={handleDownload}
+          disabled={isDownloadDisabled || isLoading}
+          style={{
+            ...styles.downloadButton,
+            ...(isDownloadDisabled || isLoading ? styles.disabledButton : {})
+          }}
+        >
+          {isLoading ? 'Loading...' : 'Download Data'}
+        </button>
+      </div>
+    </PanelContainer>
   );
 };
 
 const styles = {
-  container: {
-    padding: '20px'
+  formContainer: {
+    padding: '15px',
+    width: '100%',
+    height: 'auto',
+    overflow: 'visible',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   section: {
-    marginBottom: '20px'
+    marginBottom: '20px',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const,
+    wordWrap: 'break-word' as const
   },
   select: {
     width: '100%',
     padding: '8px',
     borderRadius: '4px',
-    border: '1px solid #ddd'
+    border: '1px solid #ddd',
+    boxSizing: 'border-box' as const
   },
   downloadButton: {
     padding: '10px 20px',
@@ -289,10 +317,6 @@ const styles = {
     cursor: 'not-allowed',
     opacity: 0.7
   },
-  noPropertiesMessage: {
-    color: '#666',
-    fontStyle: 'italic'
-  },
   errorMessage: {
     backgroundColor: '#f8d7da',
     color: '#721c24',
@@ -300,7 +324,11 @@ const styles = {
     borderRadius: '4px',
     marginBottom: '15px',
     fontSize: '14px'
+  },
+  noPropertiesMessage: {
+    fontStyle: 'italic',
+    color: '#888'
   }
-} as const;
+};
 
 export default RelationshipDownload;

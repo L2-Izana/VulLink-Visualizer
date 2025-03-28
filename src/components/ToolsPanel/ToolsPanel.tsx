@@ -19,7 +19,8 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
         flexDirection: 'column' as const,
         height: '100%',
         boxSizing: 'border-box' as const,
-        padding: '10px'
+        padding: '10px',
+        overflow: 'hidden'
     };
 
     const tabsContainerStyle = {
@@ -45,19 +46,21 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
 
     const contentStyle = {
         flex: 1,
-        overflow: 'auto' as const,
+        overflowY: 'auto' as const,
+        overflowX: 'hidden' as const,
         backgroundColor: 'white',
         borderRadius: '8px',
-        padding: '12px',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+        padding: '0',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+        display: 'flex',
+        flexDirection: 'column' as const,
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box' as const
     };
 
     return (
-        <div style={containerStyle}>
-            {/* <h2 style={{ margin: '0 0 15px 0', color: '#1A2980', textAlign: 'center' as const }}>
-                Tools Panel
-            </h2> */}
-            
+        <div style={containerStyle}>            
             <div style={tabsContainerStyle}>
                 <button
                     onClick={() => setActiveTab('samples')}

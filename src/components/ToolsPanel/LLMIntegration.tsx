@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { convertToCSV, downloadFile } from '../../utils/download';
+import PanelContainer from './shared/PanelContainer';
 
 interface LLMIntegrationProps {
   onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm') => Promise<any>;
@@ -105,159 +106,153 @@ const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
   };
 
   return (
-    <div style={styles.outerContainer}>
-      <div style={styles.card} className="card">
-        <h2 style={styles.header}>LLM-Based Vulnerability Description Embeddings</h2>
-        <p style={styles.description}>
-          Download pre-embedded vulnerability descriptions using our unified embedding model.
-          These embeddings can be used for exploitability prediction, coexploitation behavior discovery, and other NLP tasks.
-        </p>
-        
-        {/* Year Selection */}
-        <div style={styles.formRow}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Year</label>
-            <select
-              className="llm-input"
-              style={styles.input}
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
-              disabled={loading}
-            >
-              {years.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
-                </option>
-              ))}
-            </select>
+    <PanelContainer
+      title="LLM-Based Vulnerability Description Embeddings"
+      description="Download pre-embedded vulnerability descriptions using our unified embedding model. These embeddings can be used for exploitability prediction, coexploitation behavior discovery, and other NLP tasks."
+    >
+      <div style={styles.cardWrapper}>
+        <div style={styles.card} className="card">
+          {/* Year Selection */}
+          <div style={styles.formRow}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Year</label>
+              <select
+                className="llm-input"
+                style={styles.input}
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                disabled={loading}
+              >
+                {years.map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr}
+                  </option>
+                ))}
+              </select>
+            </div>
+          
+            {/* Embedding Dimension */}
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Embedding Dimension</label>
+              <input
+                className="llm-input"
+                type="number"
+                style={styles.input}
+                value={embeddingDim}
+                onChange={(e) => setEmbeddingDim(e.target.value)}
+                min="10"
+                max="100"
+                disabled={loading}
+              />
+            </div>
           </div>
-        
-          {/* Embedding Dimension */}
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Embedding Dimension</label>
-            <input
-              className="llm-input"
-              type="number"
-              style={styles.input}
-              value={embeddingDim}
-              onChange={(e) => setEmbeddingDim(e.target.value)}
-              min="10"
-              max="100"
-              disabled={loading}
-            />
+          
+          {/* File Format */}
+          <div style={styles.formRow}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>File Format</label>
+              <select
+                className="llm-input"
+                style={styles.input}
+                value={fileFormat}
+                onChange={(e) => setFileFormat(e.target.value)}
+                disabled={loading}
+              >
+                <option value="csv">CSV</option>
+                <option value="pkl">PKL</option>
+                <option value="json">JSON</option>
+              </select>
+            </div>
           </div>
-        </div>
-        
-        {/* File Format */}
-        <div style={styles.formRow}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>File Format</label>
-            <select
-              className="llm-input"
-              style={styles.input}
-              value={fileFormat}
-              onChange={(e) => setFileFormat(e.target.value)}
-              disabled={loading}
-            >
-              <option value="csv">CSV</option>
-              <option value="pkl">PKL</option>
-              <option value="json">JSON</option>
-            </select>
-          </div>
-        </div>
 
-        {/* Error message */}
-        {error && (
-          <div style={styles.errorMessage} role="alert">
-            {error}
-          </div>
-        )}
-        
-        {/* Download button */}
-        <button
-          className="llm-button"
-          style={{
-            ...styles.button,
-            ...(loading ? styles.disabledButton : {})
-          }}
-          onClick={handleDownload}
-          disabled={loading}
-        >
-          {loading ? (
-            "Loading..."
-          ) : (
-            <>
-              <Download style={styles.icon} size={20} />
-              Download Embeddings
-            </>
+          {/* Error message */}
+          {error && (
+            <div style={styles.errorMessage} role="alert">
+              {error}
+            </div>
           )}
-        </button>
+          
+          {/* Download button */}
+          <button
+            className="llm-button"
+            style={{
+              ...styles.button,
+              ...(loading ? styles.disabledButton : {})
+            }}
+            onClick={handleDownload}
+            disabled={loading}
+          >
+            {loading ? (
+              "Loading..."
+            ) : (
+              <>
+                <Download style={styles.icon} size={20} />
+                Download Embeddings
+              </>
+            )}
+          </button>
+        </div>
+        <style>{`
+          .llm-input {
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          }
+          .llm-input:focus {
+            border-color: #007ACC !important;
+            box-shadow: 0 0 5px rgba(0, 122, 204, 0.5);
+            outline: none;
+          }
+          .llm-button {
+            transition: background-color 0.2s ease, transform 0.1s ease;
+          }
+          .llm-button:hover:not(:disabled) {
+            background-color: #005fa3 !important;
+          }
+          .llm-button:active:not(:disabled) {
+            transform: scale(0.98);
+          }
+          .card {
+            transition: box-shadow 0.3s ease;
+          }
+          .card:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+          }
+        `}</style>
       </div>
-      <style>{`
-        .llm-input {
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .llm-input:focus {
-          border-color: #007ACC !important;
-          box-shadow: 0 0 5px rgba(0, 122, 204, 0.5);
-          outline: none;
-        }
-        .llm-button {
-          transition: background-color 0.2s ease, transform 0.1s ease;
-        }
-        .llm-button:hover:not(:disabled) {
-          background-color: #005fa3 !important;
-        }
-        .llm-button:active:not(:disabled) {
-          transform: scale(0.98);
-        }
-        .card {
-          transition: box-shadow 0.3s ease;
-        }
-        .card:hover {
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-        }
-      `}</style>
-    </div>
+    </PanelContainer>
   );
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
-  outerContainer: {
-    padding: '10px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'flex-start'
+  cardWrapper: {
+    padding: '15px',
+    width: '100%',
+    height: 'auto',
+    overflow: 'visible',
+    boxSizing: 'border-box' as const,
+    maxWidth: '100%'
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
     padding: '20px',
     width: '100%',
-  },
-  header: {
-    fontSize: '1.5rem',
-    marginBottom: '12px',
-    textAlign: 'center',
-    color: '#333'
-  },
-  description: {
-    textAlign: 'left',
-    color: '#666',
-    marginBottom: '20px',
-    lineHeight: '1.5',
-    fontSize: '0.9rem'
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   formRow: {
     display: 'flex',
     flexWrap: 'wrap',
     gap: '12px',
-    marginBottom: '14px'
+    marginBottom: '14px',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   formGroup: {
     flex: '1',
-    minWidth: '180px'
+    minWidth: '180px',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   label: {
     display: 'block',

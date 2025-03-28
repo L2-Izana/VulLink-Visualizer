@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
 import { nodeTypes } from '../../schema/nodeConfigs';
 import CheckboxList from './shared/CheckboxList';
+import PanelContainer from './shared/PanelContainer';
 
 interface NodeDownloadProps {
   /**
@@ -115,92 +116,105 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
   }, [selectedNodeType, selectedProperties, format, onQuerySelect]);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.section}>
-        <h4>1. Select Node Type</h4>
-        <select
-          value={selectedNodeType}
-          onChange={handleNodeTypeChange}
-          style={styles.select}
-          disabled={isLoading}
-        >
-          <option value="">Select a node type...</option>
-          {Object.values(nodeTypes).map((type) => (
-            <option key={type.label} value={type.label}>
-              {type.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedNodeType && (
+    <PanelContainer
+      title="Node Download"
+      description="Download node data from the graph database by selecting a node type, choosing specific properties, and specifying your preferred file format."
+    >
+      <div style={styles.formContainer}>
         <div style={styles.section}>
-          <h4>2. Select Properties</h4>
-          <CheckboxList
-            options={[...nodeTypes[selectedNodeType].properties]}
-            selectedOptions={selectedProperties}
-            onChange={handlePropertyChange}
-            onSelectAll={handleSelectAllProperties}
-            label="Select Properties"
+          <h4>1. Select Node Type</h4>
+          <select
+            value={selectedNodeType}
+            onChange={handleNodeTypeChange}
+            style={styles.select}
             disabled={isLoading}
-          />
+          >
+            <option value="">Select a node type...</option>
+            {Object.values(nodeTypes).map((type) => (
+              <option key={type.label} value={type.label}>
+                {type.label}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
 
-      <div style={styles.section}>
-        <h4>3. Select Format</h4>
-        <div style={styles.radioGroup}>
-          <label style={styles.radioLabel}>
-            <input
-              type="radio"
-              value="json"
-              checked={format === 'json'}
-              onChange={handleFormatChange}
+        {selectedNodeType && (
+          <div style={styles.section}>
+            <h4>2. Select Properties</h4>
+            <CheckboxList
+              options={[...nodeTypes[selectedNodeType].properties]}
+              selectedOptions={selectedProperties}
+              onChange={handlePropertyChange}
+              onSelectAll={handleSelectAllProperties}
+              label="Select Properties"
               disabled={isLoading}
             />
-            JSON
-          </label>
-          <label style={styles.radioLabel}>
-            <input
-              type="radio"
-              value="csv"
-              checked={format === 'csv'}
-              onChange={handleFormatChange}
-              disabled={isLoading}
-            />
-            CSV
-          </label>
+          </div>
+        )}
+
+        <div style={styles.section}>
+          <h4>3. Select Format</h4>
+          <div style={styles.radioGroup}>
+            <label style={styles.radioLabel}>
+              <input
+                type="radio"
+                value="json"
+                checked={format === 'json'}
+                onChange={handleFormatChange}
+                disabled={isLoading}
+              />
+              JSON
+            </label>
+            <label style={styles.radioLabel}>
+              <input
+                type="radio"
+                value="csv"
+                checked={format === 'csv'}
+                onChange={handleFormatChange}
+                disabled={isLoading}
+              />
+              CSV
+            </label>
+          </div>
         </div>
+
+        {error && (
+          <div style={styles.errorMessage} role="alert">
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={handleDownload}
+          disabled={!selectedNodeType || selectedProperties.length === 0 || isLoading}
+          style={{
+            ...styles.downloadButton,
+            ...((!selectedNodeType || selectedProperties.length === 0 || isLoading) 
+              ? styles.disabledButton 
+              : {})
+          }}
+        >
+          {isLoading ? 'Loading...' : 'Download Data'}
+        </button>
       </div>
-
-      {error && (
-        <div style={styles.errorMessage} role="alert">
-          {error}
-        </div>
-      )}
-
-      <button
-        onClick={handleDownload}
-        disabled={!selectedNodeType || selectedProperties.length === 0 || isLoading}
-        style={{
-          ...styles.downloadButton,
-          ...((!selectedNodeType || selectedProperties.length === 0 || isLoading) 
-            ? styles.disabledButton 
-            : {})
-        }}
-      >
-        {isLoading ? 'Loading...' : 'Download Data'}
-      </button>
-    </div>
+    </PanelContainer>
   );
 };
 
 const styles = {
-  container: {
-    padding: '20px'
+  formContainer: {
+    padding: '15px',
+    width: '100%',
+    height: 'auto',
+    overflow: 'visible',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   section: {
-    marginBottom: '20px'
+    marginBottom: '20px',
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box' as const
   },
   select: {
     width: '100%',
