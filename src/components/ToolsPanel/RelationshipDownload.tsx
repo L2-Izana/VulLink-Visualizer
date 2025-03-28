@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
 import { nodeTypes } from '../../schema/nodeConfigs';
-import CheckboxList from './shared/CheckboxList';
+import PropertyButton from './shared/PropertyButton';
 import PanelContainer from './shared/PanelContainer';
 
 interface RelationshipDownloadProps {
@@ -83,6 +83,20 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
       setProperties: React.Dispatch<React.SetStateAction<string[]>>
     ) => {
       setProperties([...properties]);
+    },
+    []
+  );
+
+  /**
+   * Clears all selected properties.
+   *
+   * @param setProperties - Setter for the corresponding properties state.
+   */
+  const handleDiscardAll = useCallback(
+    (
+      setProperties: React.Dispatch<React.SetStateAction<string[]>>
+    ) => {
+      setProperties([]);
     },
     []
   );
@@ -178,7 +192,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
             <div style={styles.section}>
               <h4>2. Select Relationship Properties</h4>
               {relationshipTypes[selectedRelationshipType].properties.length > 0 ? (
-                <CheckboxList
+                <PropertyButton
                   options={[...relationshipTypes[selectedRelationshipType].properties]}
                   selectedOptions={selectedProperties}
                   onChange={(prop, checked) =>
@@ -190,6 +204,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                       setSelectedProperties
                     )
                   }
+                  onDiscardAll={() => handleDiscardAll(setSelectedProperties)}
                   label="Relationship Properties"
                   disabled={isLoading}
                 />
@@ -204,7 +219,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                 3. Select Source Node Properties (
                 {relationshipTypes[selectedRelationshipType].source})
               </h4>
-              <CheckboxList
+              <PropertyButton
                 options={
                   relationshipTypes[selectedRelationshipType].source in nodeTypes
                     ? [...nodeTypes[relationshipTypes[selectedRelationshipType].source as keyof typeof nodeTypes].properties]
@@ -222,6 +237,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                     setSourceProperties
                   )
                 }
+                onDiscardAll={() => handleDiscardAll(setSourceProperties)}
                 label="Source Node Properties"
                 disabled={isLoading}
               />
@@ -233,7 +249,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                 4. Select Target Node Properties (
                 {relationshipTypes[selectedRelationshipType].target})
               </h4>
-              <CheckboxList
+              <PropertyButton
                 options={
                   relationshipTypes[selectedRelationshipType].target in nodeTypes
                     ? [...nodeTypes[relationshipTypes[selectedRelationshipType].target as keyof typeof nodeTypes].properties]
@@ -251,6 +267,7 @@ const RelationshipDownload: React.FC<RelationshipDownloadProps> = ({ onQuerySele
                     setTargetProperties
                   )
                 }
+                onDiscardAll={() => handleDiscardAll(setTargetProperties)}
                 label="Target Node Properties"
                 disabled={isLoading}
               />

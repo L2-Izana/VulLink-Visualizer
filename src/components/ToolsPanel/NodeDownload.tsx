@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { downloadFile, convertToCSV } from '../../utils/download';
 import { nodeTypes } from '../../schema/nodeConfigs';
-import CheckboxList from './shared/CheckboxList';
+import PropertyButton from './shared/PropertyButton';
 import PanelContainer from './shared/PanelContainer';
 
 interface NodeDownloadProps {
@@ -63,6 +63,13 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
     if (!selectedNodeType) return;
     setSelectedProperties([...nodeTypes[selectedNodeType].properties]);
   }, [selectedNodeType]);
+
+  /**
+   * Clears all selected properties.
+   */
+  const handleDiscardAllProperties = useCallback(() => {
+    setSelectedProperties([]);
+  }, []);
 
   /**
    * Handles changes to the download format.
@@ -141,11 +148,12 @@ const NodeDownload: React.FC<NodeDownloadProps> = ({ onQuerySelect }) => {
         {selectedNodeType && (
           <div style={styles.section}>
             <h4>2. Select Properties</h4>
-            <CheckboxList
+            <PropertyButton
               options={[...nodeTypes[selectedNodeType].properties]}
               selectedOptions={selectedProperties}
               onChange={handlePropertyChange}
               onSelectAll={handleSelectAllProperties}
+              onDiscardAll={handleDiscardAllProperties}
               label="Select Properties"
               disabled={isLoading}
             />
