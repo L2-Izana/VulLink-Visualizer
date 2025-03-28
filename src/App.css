@@ -36,3 +36,52 @@
     transform: rotate(360deg);
   }
 }
+
+/* Global styles to prevent horizontal scrolling in panels */
+.panel-content {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* All container elements should not scroll */
+.formContainer, .cardWrapper, .tableLayout, div[style*="container"] {
+  overflow: hidden !important;
+}
+
+/* Only content elements should scroll */
+.panel-content > div, .panel-content > form, .panel-content > table {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  word-wrap: break-word !important;
+}
+
+/* Ensure tables and forms in the application fit within containers */
+table, form, .table-layout {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  table-layout: fixed;
+}
+
+/* Make sure content in table cells wraps properly */
+td, th {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  padding: 8px;
+}
+
+/* Ensure all form elements fit within their containers */
+input, select, textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix long text content that might cause overflow */
+pre, code, p {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-width: 100%;
+}

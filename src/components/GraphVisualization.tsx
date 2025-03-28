@@ -9,7 +9,7 @@ interface GraphVisualizationProps {
 }
 
 const containerStyle: React.CSSProperties = {
-  height: '500px',
+  height: '100%',
   border: '1px solid #ccc',
   margin: '0px',
   borderRadius: '8px',
@@ -20,8 +20,8 @@ const containerStyle: React.CSSProperties = {
 
 const detailPanelStyle: React.CSSProperties = {
   position: 'absolute',
-  bottom: '20px',
-  left: '20px',
+  top: '20px',
+  right: '20px',
   maxWidth: '280px',
   backgroundColor: 'rgba(255, 255, 255, 0.95)',
   borderRadius: '12px',
@@ -141,9 +141,15 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
   }, [nodeRadius, data]);
 
   const handleNodeClick = useCallback((node: NodeData) => {
-    setSelectedNode(node);
-    onNodeClick(node);
-  }, [onNodeClick]);
+    // If the same node is clicked again, close the panel
+    if (selectedNode && selectedNode.id === node.id) {
+      setSelectedNode(null);
+    } else {
+      // Otherwise, select the new node
+      setSelectedNode(node);
+      onNodeClick(node);
+    }
+  }, [selectedNode, onNodeClick]);
 
   const handleNodeDragEnd = useCallback((node: any) => {
     node.x = Math.max(nodeRadius, Math.min(containerWidth - nodeRadius, node.x));
@@ -233,7 +239,11 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
             {Object.entries(selectedNode.properties).map(([key, value]) => (
               <div key={key} style={detailItemStyle}>
                 <span style={detailKeyStyle}>{key}</span>
-                <span style={detailValueStyle}>{JSON.stringify(value)}</span>
+                <span style={detailValueStyle}>
+                  {typeof value === 'string' 
+                    ? value 
+                    : JSON.stringify(value).replace(/"/g, '')}
+                </span>
               </div>
             ))}
           </div>
