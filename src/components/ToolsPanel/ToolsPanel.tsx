@@ -6,7 +6,7 @@ import NodeDownload from './NodeDownload';
 import RelationshipDownload from './RelationshipDownload';
 
 interface ToolsPanelProps {
-    onQuerySelect: (query: string) => Promise<any>;
+    onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm') => Promise<any>;
 }
 
 type TabType = 'samples' | 'subgraph' | 'llm' | 'nodeDownload' | 'relDownload';
@@ -15,34 +15,48 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
     const [activeTab, setActiveTab] = useState<TabType>('samples');
 
     const containerStyle = {
-        padding: '20px',
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        margin: '0 20px 20px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        border: '1px solid #eaeaea'
+        display: 'flex',
+        flexDirection: 'column' as const,
+        height: '100%',
+        boxSizing: 'border-box' as const,
+        padding: '15px'
     };
 
     const tabsContainerStyle = {
         display: 'flex',
-        borderBottom: '1px solid #eaeaea',
+        flexDirection: 'column' as const,
+        gap: '5px',
         marginBottom: '20px'
     };
 
     const tabStyle = (isActive: boolean) => ({
-        padding: '10px 20px',
-        backgroundColor: isActive ? '#4a90e2' : 'transparent',
-        color: isActive ? 'white' : '#666',
+        padding: '12px 15px',
+        backgroundColor: isActive ? '#1A2980' : '#d0e4ff',
+        color: isActive ? 'white' : '#1A2980',
         border: 'none',
+        borderRadius: '6px',
         cursor: 'pointer',
-        borderBottom: isActive ? '2px solid #2171cd' : '2px solid transparent',
-        transition: 'all 0.3s ease',
-        fontWeight: isActive ? '600' : '400',
-        fontSize: '14px'
+        transition: 'all 0.2s ease',
+        fontWeight: isActive ? 'bold' : 'normal',
+        textAlign: 'left' as const,
+        boxShadow: isActive ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
     });
+
+    const contentStyle = {
+        flex: 1,
+        overflow: 'auto' as const,
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '15px',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+    };
 
     return (
         <div style={containerStyle}>
+            <h2 style={{ margin: '0 0 15px 0', color: '#1A2980', textAlign: 'center' as const }}>
+                Tools Panel
+            </h2>
+            
             <div style={tabsContainerStyle}>
                 <button
                     onClick={() => setActiveTab('samples')}
@@ -76,7 +90,7 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
                 </button>
             </div>
 
-            <div style={{ padding: '10px' }}>
+            <div style={contentStyle}>
                 {activeTab === 'samples' && <SampleVisualization onQuerySelect={onQuerySelect} />}
                 {activeTab === 'subgraph' && <SubgraphQA onQuerySelect={onQuerySelect} />}
                 {activeTab === 'llm' && <LLMIntegration onQuerySelect={onQuerySelect} />}

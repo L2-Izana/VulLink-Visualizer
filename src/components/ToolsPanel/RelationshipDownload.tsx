@@ -10,7 +10,7 @@ interface RelationshipDownloadProps {
    * @param purpose - A string indicating the query purpose (e.g., 'download').
    * @returns A Promise resolving with the query results.
    */
-  onQuerySelect: (query: string, purpose: string) => Promise<any>;
+  onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm') => Promise<any>;
 }
 
 const relationshipTypes = {
