@@ -19,18 +19,18 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
         flexDirection: 'column' as const,
         height: '100%',
         boxSizing: 'border-box' as const,
-        padding: '15px'
+        padding: '10px'
     };
 
     const tabsContainerStyle = {
         display: 'flex',
         flexDirection: 'column' as const,
-        gap: '5px',
-        marginBottom: '20px'
+        gap: '4px',
+        marginBottom: '15px'
     };
 
     const tabStyle = (isActive: boolean) => ({
-        padding: '12px 15px',
+        padding: '10px 12px',
         backgroundColor: isActive ? '#1A2980' : '#d0e4ff',
         color: isActive ? 'white' : '#1A2980',
         border: 'none',
@@ -39,7 +39,8 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
         transition: 'all 0.2s ease',
         fontWeight: isActive ? 'bold' : 'normal',
         textAlign: 'left' as const,
-        boxShadow: isActive ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+        boxShadow: isActive ? '0 2px 5px rgba(0,0,0,0.1)' : 'none',
+        fontSize: '0.9rem'
     });
 
     const contentStyle = {
@@ -47,7 +48,7 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
         overflow: 'auto' as const,
         backgroundColor: 'white',
         borderRadius: '8px',
-        padding: '15px',
+        padding: '12px',
         boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
     };
 

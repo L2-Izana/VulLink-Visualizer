@@ -5,13 +5,12 @@ interface SampleVisualizationProps {
 }
 
 const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect }) => {
-  const [activeTab, setActiveTab] = useState<'nodes' | 'relationships'>('nodes');
   const [tooltipInfo, setTooltipInfo] = useState<{ text: string; x: number; y: number } | null>(null);
-  const [hoveredButton, setHoveredButton] = useState<number | null>(null);
-  const [clickedButton, setClickedButton] = useState<number | null>(null);
+  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+  const [clickedButton, setClickedButton] = useState<string | null>(null);
 
-  const handleClick = (query: string, index: number) => {
-    setClickedButton(index);
+  const handleClick = (query: string, buttonId: string) => {
+    setClickedButton(buttonId);
     onQuerySelect(query);
     
     // Reset the clicked state after a short delay for visual feedback
@@ -82,76 +81,81 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
     ]
   };
 
-  const getButtonStyle = (index: number) => {
+  const getButtonStyle = (buttonId: string, isRelationship = false) => {
+    const isHovered = hoveredButton === buttonId;
+    const isClicked = clickedButton === buttonId;
+    
     return {
       ...styles.button,
-      ...(hoveredButton === index ? styles.buttonHovered : {}),
-      ...(clickedButton === index ? styles.buttonClicked : {})
+      ...(isRelationship ? styles.relationshipButton : styles.nodeButton),
+      ...(isHovered ? (isRelationship ? styles.relationshipButtonHovered : styles.nodeButtonHovered) : {}),
+      ...(isClicked ? (isRelationship ? styles.relationshipButtonClicked : styles.nodeButtonClicked) : {})
     };
   };
 
   return (
     <div style={styles.container}>
-      <div style={styles.tabs}>
-        <button 
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'nodes' ? styles.activeTab : {})
-          }}
-          onClick={() => setActiveTab('nodes')}
-        >
-          Nodes
-        </button>
-        <button 
-          style={{
-            ...styles.tabButton,
-            ...(activeTab === 'relationships' ? styles.activeTab : {})
-          }}
-          onClick={() => setActiveTab('relationships')}
-        >
-          Relationships
-        </button>
-      </div>
+      <h3 style={styles.title}>Graph Explorer</h3>
+      <p style={styles.description}>
+        Explore the Vulnerability Knowledge Graph by selecting node types or relationships. 
+        Click any button to visualize examples in the graph and discover connections between vulnerabilities, 
+        exploits, products, and more.
+      </p>
+      
+      <div style={styles.tableContainer}>
+        <div style={styles.tableRow}>
+          <div style={styles.tableHeader}>Relationships</div>
+          <div style={styles.tableHeader}>Nodes</div>
+        </div>
 
-      <div style={styles.content}>
-        {activeTab === 'nodes' && (
-          <div style={styles.buttonGrid}>
-            {sampleQueries.nodes.map((item, index) => (
-              <button
-                key={index}
-                onClick={() => handleClick(item.query, index)}
-                onMouseEnter={() => setHoveredButton(index)}
-                onMouseLeave={() => setHoveredButton(null)}
-                style={getButtonStyle(index)}
-              >
-                {item.label}
-              </button>
-            ))}
+        <div style={styles.tableContent}>
+          {/* Left side: Relationships */}
+          <div style={styles.tableCell}>
+            <div style={styles.buttonGrid}>
+              {sampleQueries.relationships.map((item, index) => {
+                const buttonId = `rel_${index}`;
+                return (
+                  <div key={index} style={styles.buttonWrapper}>
+                    <button
+                      onClick={() => handleClick(item.query, buttonId)}
+                      onMouseEnter={(e) => {
+                        setHoveredButton(buttonId);
+                        handleInfoHover(e, `${item.source} ―[${item.relationship}]⟶ ${item.target}`);
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredButton(null);
+                        handleInfoLeave();
+                      }}
+                      style={getButtonStyle(buttonId, true)}
+                    >
+                      {item.relationship}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        )}
-
-        {activeTab === 'relationships' && (
-          <div style={styles.buttonGrid}>
-            {sampleQueries.relationships.map((item, index) => (
-              <div key={index} style={styles.buttonWrapper}>
-                <button
-                  onClick={() => handleClick(item.query, index)}
-                  onMouseEnter={(e) => {
-                    setHoveredButton(index);
-                    handleInfoHover(e, `${item.source} ―[${item.relationship}]⟶ ${item.target}`);
-                  }}
-                  onMouseLeave={() => {
-                    setHoveredButton(null);
-                    handleInfoLeave();
-                  }}
-                  style={getButtonStyle(index)}
-                >
-                  {item.relationship}
-                </button>
-              </div>
-            ))}
+          
+          {/* Right side: Nodes */}
+          <div style={styles.tableCell}>
+            <div style={styles.buttonGrid}>
+              {sampleQueries.nodes.map((item, index) => {
+                const buttonId = `node_${index}`;
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleClick(item.query, buttonId)}
+                    onMouseEnter={() => setHoveredButton(buttonId)}
+                    onMouseLeave={() => setHoveredButton(null)}
+                    style={getButtonStyle(buttonId)}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       {tooltipInfo && (
@@ -169,73 +173,129 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
 
 const styles = {
   container: {
-    padding: '20px',
+    padding: '15px',
     fontFamily: 'Arial, sans-serif',
-    position: 'relative' as const
+    position: 'relative' as const,
+    background: '#f8f8f8',
+    borderRadius: '10px'
   },
-  tabs: {
-    display: 'flex',
-    borderBottom: '1px solid #ddd',
-    marginBottom: '20px'
-  },
-  tabButton: {
-    padding: '10px 15px',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    fontSize: '15px',
-    fontWeight: 'normal' as const,
-    color: '#555'
-  },
-  activeTab: {
-    borderBottom: '2px solid #4B0082',
+  title: {
+    fontSize: '18px',
+    margin: '0 0 15px 0',
+    color: '#2c3e50',
+    textAlign: 'center' as const,
     fontWeight: 'bold' as const,
-    color: '#4B0082'
+    textTransform: 'uppercase' as const,
+    letterSpacing: '1px',
+    borderBottom: '2px solid #3498db',
+    paddingBottom: '8px'
   },
-  content: {
-    marginTop: '20px'
+  tableContainer: {
+    width: '100%',
+    border: '1px solid #e0e0e0',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+  },
+  tableRow: {
+    display: 'flex',
+    borderBottom: '1px solid #e0e0e0',
+    background: '#3498db'
+  },
+  tableHeader: {
+    flex: '1 1 50%',
+    padding: '12px 15px',
+    fontWeight: 'bold' as const,
+    textAlign: 'center' as const,
+    fontSize: '14px',
+    color: 'white',
+    borderRight: '1px solid rgba(255,255,255,0.2)'
+  },
+  tableContent: {
+    display: 'flex',
+    minHeight: '300px',
+    background: 'white'
+  },
+  tableCell: {
+    flex: '1 1 50%',
+    padding: '15px',
+    borderRight: '1px solid #e0e0e0'
   },
   buttonGrid: {
     display: 'flex',
-    flexWrap: 'wrap' as const,
+    flexDirection: 'column' as const,
     gap: '10px'
   },
   buttonWrapper: {
     position: 'relative' as const
   },
   button: {
-    padding: '8px 16px',
-    backgroundColor: '#f0f0f0',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
+    padding: '10px 16px',
+    border: 'none',
+    borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '14px',
-    color: '#333',
-    minWidth: '120px',
+    width: '100%',
     textAlign: 'center' as const,
-    transition: 'all 0.2s ease'
+    transition: 'all 0.3s ease',
+    fontWeight: '500' as const,
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
   },
-  buttonHovered: {
-    backgroundColor: '#e0e0e0',
+  relationshipButton: {
+    background: '#3498db',
+    color: 'white',
+    borderLeft: '4px solid #2980b9'
+  },
+  nodeButton: {
+    background: '#2ecc71',
+    color: 'white',
+    borderLeft: '4px solid #27ae60'
+  },
+  relationshipButtonHovered: {
     transform: 'translateY(-2px)',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    background: '#3498db',
+    filter: 'brightness(110%)'
   },
-  buttonClicked: {
-    backgroundColor: '#d0d0d0',
+  nodeButtonHovered: {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    background: '#2ecc71',
+    filter: 'brightness(110%)'
+  },
+  relationshipButtonClicked: {
     transform: 'translateY(0px)',
-    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+    boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+    background: '#2980b9'
+  },
+  nodeButtonClicked: {
+    transform: 'translateY(0px)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+    background: '#27ae60'
   },
   tooltip: {
     position: 'fixed' as const,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(44, 62, 80, 0.95)',
     color: 'white',
-    padding: '5px 10px',
-    borderRadius: '4px',
-    fontSize: '12px',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    fontSize: '13px',
     zIndex: 1000,
     transform: 'translate(10px, 10px)',
     pointerEvents: 'none' as const,
-    maxWidth: '250px'
+    maxWidth: '250px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+    borderLeft: '3px solid #3498db'
+  },
+  description: {
+    fontSize: '13px',
+    color: '#5a6a7a',
+    margin: '0 0 15px 0',
+    textAlign: 'center' as const,
+    lineHeight: '1.5',
+    maxWidth: '95%',
+    marginLeft: 'auto',
+    marginRight: 'auto'
   }
 };
 

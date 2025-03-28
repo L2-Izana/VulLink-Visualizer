@@ -224,40 +224,40 @@ const LLMIntegration: React.FC<LLMIntegrationProps> = ({ onQuerySelect }) => {
 
 const styles: { [key: string]: React.CSSProperties } = {
   outerContainer: {
-    padding: '20px',
+    padding: '10px',
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'flex-start'
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-    padding: '30px',
+    padding: '20px',
     width: '100%',
-    maxWidth: '800px'
   },
   header: {
-    fontSize: '1.8rem',
-    marginBottom: '16px',
+    fontSize: '1.5rem',
+    marginBottom: '12px',
     textAlign: 'center',
     color: '#333'
   },
   description: {
-    textAlign: 'center',
+    textAlign: 'left',
     color: '#666',
-    marginBottom: '24px',
-    lineHeight: '1.5'
+    marginBottom: '20px',
+    lineHeight: '1.5',
+    fontSize: '0.9rem'
   },
   formRow: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '16px',
-    marginBottom: '16px'
+    gap: '12px',
+    marginBottom: '14px'
   },
   formGroup: {
     flex: '1',
-    minWidth: '200px'
+    minWidth: '180px'
   },
   label: {
     display: 'block',
