@@ -111,31 +111,37 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
   // Add collision force with extra padding
   useEffect(() => {
     if (graphRef.current) {
-      graphRef.current.d3Force('collide', d3.forceCollide((node: any) => nodeRadius+2));
+      graphRef.current.d3Force('collide', d3.forceCollide((node: any) => nodeRadius*1.5));
     }
   }, [nodeRadius]);
 
-  // Add force configuration
+  // Add force configuration with increased distance and strength
   useEffect(() => {
     if (graphRef.current) {
-      // Decrease link distance and increase strength for tighter connections
+      // Calculate link distance based on relationship label length
       graphRef.current.d3Force('link')
-        .distance(() => 20) // Reduced from default
-        .strength(1); // Increased link strength
+        .distance((link: any) => {
+          // Estimate text width (approximately 6px per character)
+          const label = link.type || '';
+          const estimatedTextWidth = label.length * 6;
+          // Make link 2 times longer than the text width, with minimum length
+          return Math.max(estimatedTextWidth * 2, 60);
+        })
+        .strength(0.5);
 
-      // Adjust charge force for closer node placement
+      // Adjust charge force for better node separation
       graphRef.current.d3Force('charge')
-        .strength(-200) // More negative value brings nodes closer
-        .distanceMax(100); // Reduced maximum distance
+        .strength(-500)
+        .distanceMax(300);
 
-      // Add stronger center force to prevent drift
+      // Add center force to keep the graph centered
       graphRef.current.d3Force('center')
-        .strength(1); // Increased centering force
+        .strength(0.05);
 
-      // Adjust collision force for minimal spacing
+      // Adjust collision force for better spacing
       graphRef.current.d3Force('collide', d3.forceCollide()
-        .radius(nodeRadius + 2) // Reduced padding
-        .strength(0.8) // Slightly reduced collision strength for closer packing
+        .radius(nodeRadius * 1.8)
+        .strength(0.5)
       );
     }
   }, [nodeRadius, data]);
@@ -150,11 +156,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
       onNodeClick(node);
     }
   }, [selectedNode, onNodeClick]);
-
-  const handleNodeDragEnd = useCallback((node: any) => {
-    node.x = Math.max(nodeRadius, Math.min(containerWidth - nodeRadius, node.x));
-    node.y = Math.max(nodeRadius, Math.min(containerHeight - nodeRadius, node.y));
-  }, [nodeRadius, containerWidth, containerHeight]);
 
   const getNodeId = useCallback((node: any): string => {
     const { label, properties } = node;
@@ -177,6 +178,76 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
         return 'Unknown';
     }
   }, []);
+
+  // Render relationship labels on links
+  const renderLinkLabel = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
+    if (!link.source || !link.target) return;
+    
+    const start = { x: link.source.x, y: link.source.y };
+    const end = { x: link.target.x, y: link.target.y };
+    
+    // Find the middle point of the link
+    const middleX = start.x + (end.x - start.x) / 2;
+    const middleY = start.y + (end.y - start.y) / 2;
+    
+    // Calculate rotation angle for the text
+    const textAngle = Math.atan2(end.y - start.y, end.x - start.x);
+    
+    // Draw relationship label
+    ctx.save();
+    ctx.translate(middleX, middleY);
+    
+    // Only rotate text if it's not upside down (improves readability)
+    if (textAngle > Math.PI / 2 || textAngle < -Math.PI / 2) {
+      ctx.rotate(textAngle + Math.PI);
+    } else {
+      ctx.rotate(textAngle);
+    }
+    
+    ctx.font = '5px Sans-Serif';
+    ctx.fillStyle = '#555';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Add a background to make the text more readable
+    const label = link.type || '';
+    const textWidth = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.fillRect(-textWidth/2 - 4, -7, textWidth + 8, 14);
+    
+    // Draw the text
+    ctx.fillStyle = '#555';
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+    
+    // Draw arrowhead at the end of the link
+    const arrowLength = 4;
+    const arrowWidth = 4;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const angle = Math.atan2(dy, dx);
+    
+    // Calculate position for the arrow (a bit before the target node to avoid overlap)
+    const nodeOffset = nodeRadius + 1;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const targetX = end.x - (dx / dist) * nodeOffset;
+    const targetY = end.y - (dy / dist) * nodeOffset;
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.translate(targetX, targetY);
+    ctx.rotate(angle);
+    
+    // Draw the arrowhead
+    ctx.moveTo(-arrowLength, -arrowWidth/2);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-arrowLength, arrowWidth/2);
+    ctx.lineTo(-arrowLength, -arrowWidth/2);
+    
+    ctx.fillStyle = '#666';
+    ctx.fill();
+    ctx.restore();
+  }, [nodeRadius]);
 
   const renderNode = useCallback((node: any, ctx: CanvasRenderingContext2D) => {
     const nodeId = getNodeId(node);
@@ -212,14 +283,19 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
         ref={graphRef}
         graphData={data}
         nodeAutoColorBy="label"
-        linkDirectionalParticles={2}
+        linkDirectionalParticles={1}
         linkDirectionalParticleSpeed={() => 0.004}
+        linkWidth={1.5}
+        linkColor={() => "#999"}
         onNodeClick={handleNodeClick}
-        onNodeDragEnd={handleNodeDragEnd}
         nodeCanvasObject={renderNode}
+        linkCanvasObject={renderLinkLabel}
+        linkCanvasObjectMode={() => "after"}
         nodeRelSize={nodeRadius}
         width={containerWidth}
         height={containerHeight}
+        d3AlphaDecay={0.015}
+        d3VelocityDecay={0.2}
       />
 
       {selectedNode && (
