@@ -3,7 +3,7 @@
  * Allows users to input and execute Cypher queries against Neo4j database.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Editor, { OnMount } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 
@@ -15,6 +15,8 @@ interface CypherFrameProps {
   error?: string | null;
   /** Warning message to display for query limitations */
   warning?: string | null;
+  /** Default query to display in the editor */
+  defaultQuery?: string;
 }
 
 // Node types and relationship types from your schema
@@ -25,9 +27,17 @@ const relationshipTypes = ['AFFECTS', 'REFERS_TO', 'EXAMPLE_OF', 'EXPLOITS', 'WR
  * CypherFrame Component
  * Provides a textarea for Cypher query input and execution
  */
-const CypherFrame: React.FC<CypherFrameProps> = ({ runQuery, error, warning }) => {
-  const [query, setQuery] = useState('MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50');
+const CypherFrame: React.FC<CypherFrameProps> = ({ runQuery, error, warning, defaultQuery }) => {
+  const [query, setQuery] = useState(defaultQuery || 'MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  // Update editor content when defaultQuery prop changes
+  useEffect(() => {
+    if (defaultQuery && editorRef.current) {
+      editorRef.current.setValue(defaultQuery);
+      setQuery(defaultQuery);
+    }
+  }, [defaultQuery]);
 
   const handleRunQuery = () => {
     runQuery(query);
@@ -35,6 +45,11 @@ const CypherFrame: React.FC<CypherFrameProps> = ({ runQuery, error, warning }) =
 
   const handleEditorDidMount: OnMount = (editor, monacoInstance) => {
     editorRef.current = editor;
+    
+    // If defaultQuery is provided during mount, set the editor value
+    if (defaultQuery && defaultQuery !== editor.getValue()) {
+      editor.setValue(defaultQuery);
+    }
     
     // Register Cypher language
     monacoInstance.languages.register({ id: 'cypher' });

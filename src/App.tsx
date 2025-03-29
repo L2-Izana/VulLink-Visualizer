@@ -3,7 +3,7 @@
  * and orchestrates the graph visualization and query interface.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Neo4jService } from './services/neo4jService';
 import GraphVisualization from './components/GraphVisualization';
 import CypherFrame from './components/CypherFrame';
@@ -43,6 +43,7 @@ const App: React.FC = () => {
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
+  const [selectedQuery, setSelectedQuery] = useState<string | undefined>(undefined);
 
   /**
    * Executes different types of Cypher queries based on the purpose
@@ -96,6 +97,12 @@ const App: React.FC = () => {
       throw error;
     }
   };
+
+  // This function handles the query selection from the tools panel
+  // and updates the CypherFrame without executing the query yet
+  const handleToolsQuerySelect = useCallback((query: string) => {
+    setSelectedQuery(query);
+  }, []);
 
   return (
     <div
@@ -164,6 +171,7 @@ const App: React.FC = () => {
               runQuery={handleRunQuery}
               error={error}
               warning={warning}
+              defaultQuery={selectedQuery}
             />
           </div>
         </div>
@@ -176,7 +184,17 @@ const App: React.FC = () => {
           borderLeft: '1px solid #d0e4ff',
           backgroundColor: 'white'
         }}>
-          <ToolsPanel onQuerySelect={handleRunQuery} />
+          <ToolsPanel 
+            onQuerySelect={(query, purpose) => {
+              // If purpose is not provided, just update the CypherFrame
+              if (!purpose) {
+                handleToolsQuerySelect(query);
+                return Promise.resolve({});
+              }
+              // Otherwise, also execute the query
+              return handleRunQuery(query, purpose);
+            }} 
+          />
         </div>
       </div>
     </div>
