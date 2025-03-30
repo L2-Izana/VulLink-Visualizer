@@ -9,6 +9,7 @@ import GraphVisualization from './components/GraphVisualization';
 import CypherFrame from './components/CypherFrame';
 import ToolsPanel from './components/ToolsPanel/ToolsPanel';
 import { GraphData, NodeData, LinkData } from './types/graph';
+import { PCA } from 'ml-pca';
 
 /** Configuration for services */
 const CONFIG = {
@@ -61,11 +62,19 @@ const App: React.FC = () => {
       switch (purpose) {
         case 'visualization':
           if (
-            !query.toLowerCase().includes('limit') ||
-            parseInt(query.toLowerCase().split('limit')[1]) > 100
+            !query.toLowerCase().includes('limit')
           ) {
-            setWarning('Please limit your query to 100 nodes or less using LIMIT clause.');
-            return {};
+            setWarning('Default limit is 200 nodes, or use LIMIT clause to limit your own query');
+            query = query + ' LIMIT 200';
+          }
+          if (query.toLowerCase().includes('limit')) {
+            if (parseInt(query.toLowerCase().split('limit')[1]) > 200) {
+              setWarning('Limit your query to 200 nodes');
+              query = query.replace(
+                /limit\s+\d+/,
+                `limit ${200}`
+              );
+            }
           }
           const visualData = await neo4jService.executeQuery(query);
           setGraphData(visualData);
@@ -78,13 +87,27 @@ const App: React.FC = () => {
 
         case 'llm': {
           const backendUrl = `${CONFIG.backend.url}/llm_embedding?${query}`;
-          console.log('LLM Request URL:', backendUrl);
+          const dim_size = parseInt(query.split('dim_size=')[1]);
           const response = await fetch(backendUrl);
           if (!response.ok) {
             throw new Error('Failed to fetch LLM embeddings');
           }
           const data = await response.json();
-          console.log('LLM Data:', data);
+          const embeddings = data.embeddings;
+          if (dim_size < 32) {
+            try {
+              // Method 1: Try direct instantiation
+              const pca = new (PCA as any)(embeddings);
+              const reducedData = pca.predict(embeddings, { nComponents: dim_size });
+              data.embeddings = reducedData.data;
+            } catch (e) {
+              // Method 2: Try with matrix conversion
+              const matrix = embeddings.map((row: any) => Array.isArray(row) ? row : [row]);
+              const pca = new (PCA as any)(matrix);
+              const reducedData = pca.predict(matrix, { nComponents: dim_size });
+              data.embeddings = reducedData.data;
+            }
+          }
           return { llmData: data };
         }
 
@@ -141,7 +164,7 @@ const App: React.FC = () => {
               VulLink: An Intelligent Dynamic Open-Access Vulnerability Graph Database
             </h1>
           </header>
-          
+
           {/* Graph visualization container */}
           <div style={{
             flex: '1 1 auto',
@@ -161,7 +184,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Cypher query editor */}
-          <div style={{ 
+          <div style={{
             flex: '0 0 auto',
             padding: '0 20px 20px',
             height: '180px', // Fixed height
@@ -184,7 +207,7 @@ const App: React.FC = () => {
           borderLeft: '1px solid #d0e4ff',
           backgroundColor: 'white'
         }}>
-          <ToolsPanel 
+          <ToolsPanel
             onQuerySelect={(query, purpose) => {
               // If purpose is not provided, just update the CypherFrame
               if (!purpose) {
@@ -193,7 +216,7 @@ const App: React.FC = () => {
               }
               // Otherwise, also execute the query
               return handleRunQuery(query, purpose);
-            }} 
+            }}
           />
         </div>
       </div>

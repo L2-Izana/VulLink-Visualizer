@@ -116,13 +116,12 @@ export const SubgraphQA: React.FC<SubgraphQAProps> = ({ onQuerySelect }) => {
 
   return (
     <PanelContainer
-      title="Subgraph Pattern Analysis"
+      title="Subgraph Analysis Demo"
       description="Analyze vulnerability patterns and explore relationships between different entities using pre-defined queries for subgraph pattern matching."
     >
       <div style={styles.content}>
         <div style={styles.queriesContainer}>
-          <h4 style={styles.sectionTitle}>Famous Cybersecurity Vulnerabilities</h4>
-          <p style={styles.description}>Click on a query to load it into the Cypher editor</p>
+          <h4 style={styles.sectionTitle}>Infamous Cybersecurity Vulnerabilities</h4>
           
           {predefinedQueries.map((q, index) => (
             <QueryItem 
