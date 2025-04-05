@@ -95,14 +95,25 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-        setContainerHeight(containerRef.current.offsetHeight);
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerWidth(rect.width);
+        setContainerHeight(rect.height);
       }
     };
 
     updateSize();
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    
+    // Add a ResizeObserver to detect container size changes
+    const resizeObserver = new ResizeObserver(updateSize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      resizeObserver.disconnect();
+    };
   }, []);
 
   const baseRadius = Math.max(containerWidth / 50, 10);
@@ -145,6 +156,16 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
       );
     }
   }, [nodeRadius, data]);
+
+  // Force graph to update when container size changes
+  useEffect(() => {
+    if (graphRef.current) {
+      graphRef.current.d3Force('center').strength(0.05);
+      graphRef.current.d3Force('charge').strength(-500);
+      graphRef.current.d3Force('link').distance(100);
+      graphRef.current.d3Force('collide', d3.forceCollide().radius(nodeRadius * 1.5));
+    }
+  }, [containerWidth, containerHeight, nodeRadius]);
 
   const handleNodeClick = useCallback((node: NodeData) => {
     // If the same node is clicked again, close the panel

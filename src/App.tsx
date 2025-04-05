@@ -160,7 +160,7 @@ const App: React.FC = () => {
             boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
             flex: '0 0 auto' // Don't grow or shrink
           }}>
-            <h1 style={{ margin: 0, fontSize: '1.4rem' }}>
+            <h1 style={{ margin: 0, fontSize: '1.6rem' }}>
               VulLink: An Intelligent Dynamic Open-Access Vulnerability Graph Database
             </h1>
           </header>
@@ -201,11 +201,11 @@ const App: React.FC = () => {
 
         {/* Right side: Tools panel */}
         <div style={{
-          flex: '0 0 30%',
-          maxWidth: '400px',
-          overflow: 'auto', // Allow scrolling if content is too large
+          flex: '0 0 auto',
+          overflow: 'visible',
           borderLeft: '1px solid #d0e4ff',
-          backgroundColor: 'white'
+          backgroundColor: 'white',
+          transition: 'flex 0.3s ease'
         }}>
           <ToolsPanel
             onQuerySelect={(query, purpose) => {
