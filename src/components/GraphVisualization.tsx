@@ -20,17 +20,20 @@ const containerStyle: React.CSSProperties = {
 
 const detailPanelStyle: React.CSSProperties = {
   position: 'absolute',
-  top: '20px',
-  right: '20px',
+  top: '0',
+  right: '0',
   maxWidth: '280px',
+  maxHeight: '100%',
   backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  borderRadius: '12px',
+  borderRadius: '0 12px 0 0',
   padding: '16px',
   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
   backdropFilter: 'blur(5px)',
   border: '1px solid rgba(200, 200, 200, 0.8)',
   zIndex: 10,
-  transition: 'all 0.3s ease'
+  transition: 'all 0.3s ease',
+  display: 'flex',
+  flexDirection: 'column'
 };
 
 const headerStyle: React.CSSProperties = {
@@ -332,7 +335,14 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
               ✕
             </button>
           </div>
-          <div style={{ maxHeight: '200px', overflowY: 'auto', scrollbarWidth: 'thin', paddingRight: '8px' }}>
+          <div style={{ 
+            flex: '0 1 auto',
+            overflowY: 'auto',
+            scrollbarWidth: 'thin',
+            paddingRight: '8px',
+            width: '100%',
+            minWidth: 'fit-content'
+          }}>
             {Object.entries(selectedNode.properties).map(([key, value]) => (
               <div key={key} style={detailItemStyle}>
                 <span style={detailKeyStyle}>{key}</span>

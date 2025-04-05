@@ -28,7 +28,7 @@ const relationshipTypes = ['AFFECTS', 'REFERS_TO', 'EXAMPLE_OF', 'EXPLOITS', 'WR
  * Provides a textarea for Cypher query input and execution
  */
 const CypherFrame: React.FC<CypherFrameProps> = ({ runQuery, error, warning, defaultQuery }) => {
-  const [query, setQuery] = useState(defaultQuery || 'MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 100');
+  const [query, setQuery] = useState(defaultQuery || 'MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
   // Update editor content when defaultQuery prop changes
