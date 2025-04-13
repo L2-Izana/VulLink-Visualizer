@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import PanelContainer from './shared/PanelContainer';
 
 interface SampleVisualizationProps {
-  onQuerySelect: (query: string) => void;
+  onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm' | 'schema') => void;
 }
 
 const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect }) => {
@@ -12,8 +12,16 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
 
   const handleClick = (query: string, buttonId: string) => {
     setClickedButton(buttonId);
-    onQuerySelect(query);
     
+    // Special case for schema visualization
+    if (buttonId === 'schema') {
+      // Only execute the query with schema purpose, don't update CypherFrame
+      onQuerySelect(query, 'schema');
+    } else {
+      // For regular queries, update the CypherFrame
+      onQuerySelect(query);
+    }
+
     // Reset the clicked state after a short delay for visual feedback
     setTimeout(() => {
       setClickedButton(null);
@@ -33,6 +41,7 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
   };
 
   const sampleQueries = {
+    schema: 'CALL db.schema.visualization()',
     nodes: [
       { label: 'Vulnerabilities', query: 'MATCH (v:Vulnerability) RETURN v LIMIT 50' },
       { label: 'Exploits', query: 'MATCH (e:Exploit) RETURN e LIMIT 50' },
@@ -43,17 +52,17 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
       { label: 'Domains', query: 'MATCH (d:Domain) RETURN d LIMIT 50' }
     ],
     relationships: [
-      { 
+      {
         source: 'Exploit',
         relationship: 'EXPLOITS',
-        target: 'Vulnerability', 
-        query: 'MATCH (e:Exploit)-[r:EXPLOITS]->(v:Vulnerability) RETURN e, r, v LIMIT 50' 
+        target: 'Vulnerability',
+        query: 'MATCH (e:Exploit)-[r:EXPLOITS]->(v:Vulnerability) RETURN e, r, v LIMIT 50'
       },
-      { 
+      {
         source: 'Product',
         relationship: 'BELONGS_TO',
-        target: 'Vendor', 
-        query: 'MATCH (p:Product)-[r:BELONGS_TO]->(v:Vendor) RETURN p, r, v LIMIT 50' 
+        target: 'Vendor',
+        query: 'MATCH (p:Product)-[r:BELONGS_TO]->(v:Vendor) RETURN p, r, v LIMIT 50'
       },
       {
         source: 'Vulnerability',
@@ -85,7 +94,7 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
   const getButtonStyle = (buttonId: string, isRelationship = false) => {
     const isHovered = hoveredButton === buttonId;
     const isClicked = clickedButton === buttonId;
-    
+
     return {
       ...styles.button,
       ...(isRelationship ? styles.relationshipButton : styles.nodeButton),
@@ -95,10 +104,31 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
   };
 
   return (
-    <PanelContainer 
+    <PanelContainer
       title="Graph Explorer"
-      description="Explore the Vulnerability Knowledge Graph by selecting node types or relationships. Click any button to visualize examples in the graph and discover connections between vulnerabilities, exploits, products, and more."
+      description="Explore the VulLink Graph Database by selecting node types or relationships. Click any button to visualize examples in the graph and discover connections."
     >
+      <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+        <button
+          onClick={() => handleClick(sampleQueries.schema, 'schema')}
+          onMouseEnter={(e) => {
+            setHoveredButton('schema');
+            handleInfoHover(e, 'Visualize the schema of the graph database');
+          }}
+          onMouseLeave={() => {
+            setHoveredButton(null);
+            handleInfoLeave();
+          }}
+          style={{
+            ...styles.schemaButton,
+            ...(hoveredButton === 'schema' ? styles.schemaButtonHovered : {}),
+            ...(clickedButton === 'schema' ? styles.schemaButtonClicked : {})
+          }}
+        >
+          Visualize Database Schema
+        </button>
+      </div>
+      
       <div style={styles.tableLayout}>
         <div style={styles.tableRow}>
           <div style={styles.tableHeader}>Relationships</div>
@@ -132,7 +162,7 @@ const SampleVisualization: React.FC<SampleVisualizationProps> = ({ onQuerySelect
               })}
             </div>
           </div>
-          
+
           {/* Right side: Nodes */}
           <div style={styles.tableCell}>
             <div style={styles.buttonGrid}>
@@ -257,6 +287,33 @@ const styles = {
     transform: 'translateY(0px)',
     boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
     background: '#27ae60'
+  },
+  schemaButton: {
+    padding: '12px 20px',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '15px',
+    fontWeight: 'bold',
+    background: '#9b59b6',
+    color: 'white',
+    borderLeft: '4px solid #8e44ad',
+    boxShadow: '0 3px 6px rgba(0,0,0,0.15)',
+    transition: 'all 0.3s ease',
+    textAlign: 'center' as const,
+    width: 'auto',
+    minWidth: 'max-content',
+    display: 'inline-block'
+  },
+  schemaButtonHovered: {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 5px 10px rgba(0,0,0,0.2)',
+    filter: 'brightness(110%)'
+  },
+  schemaButtonClicked: {
+    transform: 'translateY(0px)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+    background: '#8e44ad'
   },
   tooltip: {
     position: 'fixed' as const,

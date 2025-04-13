@@ -7,7 +7,7 @@ import NodeDownload from './NodeDownload';
 import RelationshipDownload from './RelationshipDownload';
 
 interface ToolsPanelProps {
-    onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm') => Promise<any>;
+    onQuerySelect: (query: string, purpose?: 'visualization' | 'download' | 'llm' | 'schema') => Promise<any>;
 }
 
 type TabType = 'samples' | 'subgraph' | 'llm' | 'nodeDownload' | 'relDownload';

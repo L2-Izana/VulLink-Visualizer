@@ -81,7 +81,7 @@ const App: React.FC = () => {
   // Usage in your existing function:
   const handleRunQuery = async (
     query: string,
-    purpose: 'visualization' | 'download' | 'llm' = 'visualization'
+    purpose: 'visualization' | 'download' | 'llm' | 'schema' = 'visualization'
   ): Promise<QueryResult> => {
     setError(null);
     setWarning(null);
@@ -93,6 +93,98 @@ const App: React.FC = () => {
 
     try {
       switch (purpose) {
+        case 'schema':
+          try {
+            const result = await neo4jService.executeRawQuery(query);
+            
+            if (result && result.length > 0) {
+              // Create a simplified schema graph with just the node types
+              const schemaData: GraphData = { nodes: [], links: [] };
+              const nodeLabels = new Set<string>();
+              const relationshipTypes = new Set<string>();
+              
+              // Extract node labels from result
+              if (result[0].nodes && Array.isArray(result[0].nodes)) {
+                result[0].nodes.forEach((node: any) => {
+                  if (node.labels && Array.isArray(node.labels)) {
+                    node.labels.forEach((label: string) => nodeLabels.add(label));
+                  }
+                });
+              }
+              
+              // Extract relationship types from result
+              if (result[0].relationships && Array.isArray(result[0].relationships)) {
+                result[0].relationships.forEach((rel: any) => {
+                  if (typeof rel === 'string') {
+                    relationshipTypes.add(rel);
+                  }
+                });
+              }
+              
+              // Create schema nodes (one per label)
+              Array.from(nodeLabels).forEach(label => {
+                schemaData.nodes.push({
+                  id: `schema_${label}`,
+                  label: label,
+                  properties: { 
+                    schemaNodeType: 'label',
+                    name: label 
+                  }
+                });
+              });
+              
+              // Create schema relationships in a circle layout
+              const nodes = schemaData.nodes;
+              if (nodes.length >= 2) {
+                // Place nodes in a circle
+                const radius = 200;
+                const angleStep = (2 * Math.PI) / nodes.length;
+                
+                nodes.forEach((node, i) => {
+                  // Add x, y positions for initial layout
+                  (node as any).x = radius * Math.cos(i * angleStep);
+                  (node as any).y = radius * Math.sin(i * angleStep);
+                });
+                
+                // Define meaningful relationship pairs based on known database structure
+                // This represents the actual graph schema more accurately
+                const relationshipPairs: {rel: string, source: string, target: string}[] = [
+                  { rel: 'EXPLOITS', source: 'Exploit', target: 'Vulnerability' },
+                  { rel: 'BELONGS_TO', source: 'Product', target: 'Vendor' },
+                  { rel: 'AFFECTS', source: 'Vulnerability', target: 'Product' },
+                  { rel: 'REFERS_TO', source: 'Vulnerability', target: 'Domain' },
+                  { rel: 'EXAMPLE_OF', source: 'Vulnerability', target: 'Weakness' },
+                  { rel: 'WRITES', source: 'Author', target: 'Exploit' }
+                ];
+                
+                // Create links based on known relationships
+                relationshipPairs.forEach(({ rel, source, target }) => {
+                  // Only create links if both source and target node types exist
+                  const sourceNode = schemaData.nodes.find(n => n.label === source);
+                  const targetNode = schemaData.nodes.find(n => n.label === target);
+                  
+                  if (sourceNode && targetNode) {
+                    schemaData.links.push({
+                      source: sourceNode.id,
+                      target: targetNode.id,
+                      type: rel
+                    });
+                  }
+                });
+              }
+              
+              setGraphData(schemaData);
+              return { graphData: schemaData };
+            }
+            
+            setWarning('Schema visualization did not return expected data format');
+            return { graphData: { nodes: [], links: [] } };
+          } catch (error) {
+            console.error('Error processing schema visualization:', error);
+            setWarning('Error processing schema visualization');
+            return { graphData: { nodes: [], links: [] } };
+          }
+          
         case 'visualization':
           if (!query.toLowerCase().includes('limit')) {
             setWarning('Default limit is 200 nodes, or use LIMIT clause to limit your own query');

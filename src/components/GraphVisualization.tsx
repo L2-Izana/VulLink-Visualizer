@@ -171,6 +171,12 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
   }, [containerWidth, containerHeight, nodeRadius]);
 
   const handleNodeClick = useCallback((node: NodeData) => {
+    // Check if this is a schema node (starts with schema_) - these should not be clickable
+    if (node.id.toString().startsWith('schema_')) {
+      // Do nothing for schema nodes
+      return;
+    }
+    
     // If the same node is clicked again, close the panel
     if (selectedNode && selectedNode.id === node.id) {
       setSelectedNode(null);
@@ -182,7 +188,14 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
   }, [selectedNode, onNodeClick]);
 
   const getNodeId = useCallback((node: any): string => {
-    const { label, properties } = node;
+    const { id, label, properties } = node;
+    
+    // For schema nodes, just return the label
+    if (id.toString().startsWith('schema_')) {
+      return label;
+    }
+    
+    // For regular nodes, use the usual logic
     switch (label) {
       case 'Vulnerability':
         return properties.cveID;
@@ -274,8 +287,31 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({ data, onNodeCli
   }, [nodeRadius]);
 
   const renderNode = useCallback((node: any, ctx: CanvasRenderingContext2D) => {
+    const isSchemaNode = node.id.toString().startsWith('schema_');
     const nodeId = getNodeId(node);
-    const fontSize = Math.min(nodeRadius / 3, 8);
+    const fontSize = isSchemaNode ? Math.min(nodeRadius / 2.5, 12) : Math.min(nodeRadius / 3, 8);
+    
+    // Different styling for schema nodes
+    if (isSchemaNode) {
+      // Schema nodes get a distinctive style
+      ctx.fillStyle = '#5D478B'; // Medium purple
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, nodeRadius * 1.2, 0, 2 * Math.PI, false);
+      ctx.fill();
+      ctx.strokeStyle = '#FFD700'; // Gold border
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Draw label text
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `bold ${fontSize}px Arial`;
+      ctx.fillStyle = 'white';
+      ctx.fillText(nodeId, node.x, node.y);
+      return;
+    }
+    
+    // Regular nodes styling (unchanged)
     ctx.fillStyle = node.color;
     ctx.beginPath();
     ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false);
