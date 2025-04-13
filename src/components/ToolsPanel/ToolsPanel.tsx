@@ -59,8 +59,8 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
 
     const tabStyle = (isActive: boolean) => ({
         padding: '10px 12px',
-        backgroundColor: isActive ? '#1A2980' : '#d0e4ff',
-        color: isActive ? 'white' : '#1A2980',
+        backgroundColor: isActive ? '#2b5eab' : '#d8e3ff',
+        color: isActive ? 'white' : '#2b5eab',
         border: 'none',
         borderRadius: '6px',
         cursor: 'pointer',
@@ -106,6 +106,20 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ onQuerySelect }) => {
             
             {!isCollapsed && (
                 <>
+                    <header style={{
+                        backgroundColor: '#1A2980',
+                        color: 'white',
+                        padding: '12px 15px',
+                        textAlign: 'center',
+                        boxShadow: '0 3px 10px rgba(0,0,0,0.15)',
+                        marginBottom: '15px',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                        fontSize: '1.1rem'
+                    }}>
+                        Tools
+                    </header>
+
                     <div style={tabsContainerStyle}>
                         <button
                             onClick={() => setActiveTab('samples')}
