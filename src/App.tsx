@@ -46,11 +46,39 @@ const App: React.FC = () => {
   const [warning, setWarning] = useState<string | null>(null);
   const [selectedQuery, setSelectedQuery] = useState<string | undefined>(undefined);
 
+
   /**
-   * Executes different types of Cypher queries based on the purpose
-   * @param query - The Cypher query to execute
-   * @param purpose - The purpose of the query (visualization, download, etc.)
-   */
+ * Checks Cypher queries to ensure they don't modify the database.
+ * @param query - The Cypher query to validate
+ * @returns boolean - true if safe, false otherwise
+ */
+  const isQuerySafe = (query: string): boolean => {
+    const forbiddenPatterns = [
+      /\bCREATE\b/i,
+      /\bMERGE\b/i,
+      /\bSET\b/i,
+      /\bDELETE\b/i,
+      /\bREMOVE\b/i,
+      /\bDETACH\b/i,
+      /\bDROP\b/i,
+      /\bCALL\s+db\.(?!.*schema|.*labels|.*relationshipTypes|.*constraints)/i,
+    ];
+
+    return !forbiddenPatterns.some((pattern) => pattern.test(query));
+  };
+
+  // Validate Graph Data
+  const isValidGraphData = (data: any): data is GraphData => {
+    return (
+      data &&
+      Array.isArray(data.nodes) &&
+      Array.isArray(data.links) &&
+      data.nodes.every((node: any) => node.id && node.label) &&
+      data.links.every((link: any) => link.source && link.target)
+    );
+  };
+
+  // Usage in your existing function:
   const handleRunQuery = async (
     query: string,
     purpose: 'visualization' | 'download' | 'llm' = 'visualization'
@@ -58,25 +86,29 @@ const App: React.FC = () => {
     setError(null);
     setWarning(null);
 
+    if (!isQuerySafe(query)) {
+      setWarning('Modification queries are not allowed for security reasons');
+      return { graphData: { nodes: [], links: [] } };
+    }
+
     try {
       switch (purpose) {
         case 'visualization':
-          if (
-            !query.toLowerCase().includes('limit')
-          ) {
+          if (!query.toLowerCase().includes('limit')) {
             setWarning('Default limit is 200 nodes, or use LIMIT clause to limit your own query');
-            query = query + ' LIMIT 200';
-          }
-          if (query.toLowerCase().includes('limit')) {
-            if (parseInt(query.toLowerCase().split('limit')[1]) > 200) {
+            query += ' LIMIT 200';
+          } else {
+            const limitMatch = query.match(/limit\s+(\d+)/i);
+            if (limitMatch && parseInt(limitMatch[1]) > 200) {
               setWarning('Limit your query to 200 nodes');
-              query = query.replace(
-                /limit\s+\d+/,
-                `limit ${200}`
-              );
+              query = query.replace(/limit\s+\d+/i, 'LIMIT 200');
             }
           }
           const visualData = await neo4jService.executeQuery(query);
+          if (!isValidGraphData(visualData)) {
+            setWarning('Query did not return valid graph data and was ignored.');
+            return { graphData: { nodes: [], links: [] } };
+          }
           setGraphData(visualData);
           return { graphData: visualData };
 
@@ -90,18 +122,19 @@ const App: React.FC = () => {
           const dim_size = parseInt(query.split('dim_size=')[1]);
           const response = await fetch(backendUrl);
           if (!response.ok) {
-            throw new Error('Failed to fetch LLM embeddings');
+            setWarning('Failed to fetch LLM embeddings');
+            return { llmData: undefined };
           }
+
           const data = await response.json();
           const embeddings = data.embeddings;
+
           if (dim_size < 32) {
             try {
-              // Method 1: Try direct instantiation
               const pca = new (PCA as any)(embeddings);
               const reducedData = pca.predict(embeddings, { nComponents: dim_size });
               data.embeddings = reducedData.data;
             } catch (e) {
-              // Method 2: Try with matrix conversion
               const matrix = embeddings.map((row: any) => Array.isArray(row) ? row : [row]);
               const pca = new (PCA as any)(matrix);
               const reducedData = pca.predict(matrix, { nComponents: dim_size });
@@ -112,15 +145,15 @@ const App: React.FC = () => {
         }
 
         default:
-          throw new Error('Invalid query purpose');
+          setWarning('Invalid query purpose');
+          return { graphData: { nodes: [], links: [] } };
       }
     } catch (error: any) {
-      setError(error.message || 'An error occurred while executing the query');
+      setWarning(error.message || 'An error occurred while executing the query');
       console.error('Error running query:', error);
-      throw error;
+      return { graphData: { nodes: [], links: [] } };
     }
   };
-
   // This function handles the query selection from the tools panel
   // and updates the CypherFrame without executing the query yet
   const handleToolsQuerySelect = useCallback((query: string) => {
