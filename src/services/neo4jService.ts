@@ -6,6 +6,7 @@ export class Neo4jService {
 
   constructor(url: string, user: string, password: string) {
     this.driver = neo4j.driver(url, neo4j.auth.basic(user, password));
+    console.log('Neo4jService initialized with URL:', url, 'User:', user, 'Password:', password ? password : 'not provided');
   }
 
   async executeQuery(query: string): Promise<GraphData> {
