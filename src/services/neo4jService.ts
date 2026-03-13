@@ -5,16 +5,42 @@ export class Neo4jService {
   private driver: Driver;
 
   constructor(url: string, user: string, password: string) {
+    if (!url) throw new Error("Neo4j URL is required");
+    if (!user) throw new Error("Neo4j user is required");
+    if (!password) throw new Error("Neo4j password is required");
+    if (user !== "neo4j") throw new Error(`Neo4j user must be "neo4j", got "${user}"`);
+
     this.driver = neo4j.driver(url, neo4j.auth.basic(user, password));
-    console.log('Neo4jService initialized with URL:', url, 'User:', user, 'Password:', password ? password : 'not provided');
+
+    // Run a quick connection check
+    this.testConnection();
+  }
+
+  private async testConnection() {
+    const session = this.driver.session();
+    try {
+      const result = await session.run(
+        "MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50"
+      );
+
+      console.log(
+        `Neo4j connection successful. Retrieved ${result.records.length} records.`
+      );
+    } catch (err) {
+      console.error("Neo4j connection test failed:", err);
+    } finally {
+      await session.close();
+    }
   }
 
   async executeQuery(query: string): Promise<GraphData> {
     const session: Session = this.driver.session();
     const nodesMap = new Map<string, NodeData>();
     const links: LinkData[] = [];
+
     try {
       const result = await session.run(query);
+
       result.records.forEach(record => {
         record.forEach(value => {
           if (value.identity && value.labels) {
@@ -26,39 +52,38 @@ export class Neo4jService {
         });
       });
 
-      return { 
-        nodes: Array.from(nodesMap.values()), 
-        links 
+      return {
+        nodes: Array.from(nodesMap.values()),
+        links
       };
     } finally {
       await session.close();
     }
   }
 
-  /**
-   * Executes a Cypher query and returns raw data without graph processing
-   * @param query - The Cypher query to execute
-   */
   async executeRawQuery(query: string): Promise<any[]> {
     const session = this.driver.session();
+
     try {
       const result = await session.run(query);
+
       return result.records.map(record => {
         const obj: any = {};
+
         record.keys.forEach(key => {
           const value = record.get(key);
-          // Handle null values and different types of neo4j values
+
           if (value === null) {
             obj[key] = null;
           } else if (value.properties) {
             obj[key] = value.properties;
-          } else if (typeof value === 'object' && value.low !== undefined) {
-            // Handle Neo4j Integer type
+          } else if (typeof value === "object" && value.low !== undefined) {
             obj[key] = value.toNumber();
           } else {
             obj[key] = value;
           }
         });
+
         return obj;
       });
     } finally {
@@ -68,11 +93,12 @@ export class Neo4jService {
 
   private processNode(value: any, nodesMap: Map<string, NodeData>) {
     const nodeId = value.identity.toString();
+
     if (!nodesMap.has(nodeId)) {
       nodesMap.set(nodeId, {
         id: nodeId,
         label: value.labels[0],
-        properties: value.properties,
+        properties: value.properties
       });
     }
   }
@@ -81,7 +107,7 @@ export class Neo4jService {
     links.push({
       source: value.start.toString(),
       target: value.end.toString(),
-      type: value.type,
+      type: value.type
     });
   }
 }

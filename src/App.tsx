@@ -12,23 +12,37 @@ import { GraphData, NodeData, LinkData } from './types/graph';
 import { PCA } from 'ml-pca';
 
 /** Configuration for services */
+
+function requireEnv(value: string | undefined, name: string): string {
+  if (!value || value.trim() === "") {
+    throw new Error(`${name} is required but not set`);
+  }
+  return value;
+}
+
 const CONFIG = {
   neo4j: {
-    url: process.env.REACT_APP_NEO4J_URL || 'bolt://localhost:7687',
-    user: process.env.REACT_APP_NEO4J_USER || 'neo4j',
-    password: process.env.REACT_APP_NEO4J_PASSWORD || 'neo4j'
+    url: requireEnv(process.env.REACT_APP_NEO4J_URL, "REACT_APP_NEO4J_URL"),
+    user: requireEnv(process.env.REACT_APP_NEO4J_USER, "REACT_APP_NEO4J_USER"),
+    password: requireEnv(process.env.REACT_APP_NEO4J_PASSWORD, "REACT_APP_NEO4J_PASSWORD")
   },
   backend: {
-    url: process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
+    url: process.env.REACT_APP_BACKEND_URL || "http://localhost:5000"
   }
 };
+
+// additional constraint: user must be neo4j
+if (CONFIG.neo4j.user !== "neo4j") {
+  throw new Error(
+    `Invalid Neo4j user "${CONFIG.neo4j.user}". Expected "neo4j".`
+  );
+}
 
 const neo4jService = new Neo4jService(
   CONFIG.neo4j.url,
   CONFIG.neo4j.user,
   CONFIG.neo4j.password
 );
-
 interface QueryResult {
   graphData?: GraphData;
   downloadData?: any[];
